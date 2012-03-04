@@ -21,6 +21,15 @@
   * http://creativecommons.org/licenses/by-nc/3.0/
   *
   */
+
+  /**
+   * ADDITIONAL PAGE DEBUG OPTIONS / PARAMETERS
+   * ?html5audio=1 - prefer HTML5 audio, if available (at own risk)
+   * ?profile=1 - shows a performance panel with live DOM stats, options to show/hide groups of DOM elements
+   * ?debug=1 - green blocks everywhere on the grid.
+   * ?mute=1 - I hate sound
+   * ?interval=1 - force setInterval() instead of requestAnimationFrame (if available)
+   */
  -->
  <link rel="stylesheet" href="css/survivor.css" />
  <script src="script/soundmanager2-nodebug-jsmin.js"></script>
@@ -37,6 +46,7 @@
   }
  </script>
  <script src="script/survivor.js"></script>
+ <script src="/common/stats.js"></script>
 </head>
 
 <body>
@@ -240,7 +250,7 @@
       <span class="divider">|</span>
       <span id="original">
        <span id="tweeter">
-        <a href="https://twitter.com/share/?text=I%20designed%20an%2080's-era%20arcade%20game%20level.%20Think%20you%20can%20beat%20it%3F%20Play%20and%20remix%20it%20here." title="Looks like you designed something. Challenge your friends to beat it!" target="_blank" class="cta tweeter" data-via="schill">twitter</a>
+        <a href="#" title="Looks like you designed something. Challenge your friends to beat it!" onclick="return false" class="cta tweeter">twitter</a>
         <span class="divider">|</span>
        </span>
        <a href="./" title="Play the default level from the original game">Play the original level</a>

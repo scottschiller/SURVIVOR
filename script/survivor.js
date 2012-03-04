@@ -314,7 +314,7 @@ function Survivor() {
 
     events: (function() {
 
-      var add, remove;
+      var add, remove, preventDefault;
 
       add = (typeof window.addEventListener !== 'undefined' ? function(o, evtName, evtHandler) {
         return o.addEventListener(evtName,evtHandler,false);
@@ -328,8 +328,18 @@ function Survivor() {
         return o.detachEvent('on'+evtName,evtHandler);
       });
 
+      preventDefault = function(e) {
+        if (e.preventDefault) {
+          e.preventDefault();
+        } else {
+          e.returnValue = false;
+          e.cancelBubble = true;
+        }
+      };
+
       return {
         add: add,
+        preventDefault: preventDefault,
         remove: remove
       };
 
@@ -8227,6 +8237,8 @@ function go_go_go() {
 
   // hackish: bypass loading / intro screens if noIntro, or if mapData and offline (file://) etc.
 
+  var tweeter = document.getElementById('tweeter');
+
   var bypassIntro = (document.location.href.match(/nointro/i) || (document.referrer && document.referrer.match(/editor/i) || (!document.location.protocol.match(/http/i) && document.location.href.match(/mapdata/i)))),
       l0 = document.getElementById('loading0'),
       l1 = document.getElementById('loading1'),
@@ -8253,8 +8265,76 @@ function go_go_go() {
     startGame();
 
     // and show the "tweeter" link, encouraging creators to share (maybe)
-    if (document.getElementById('tweeter') && !window.location.href.match(/temp/i)) {
-      document.getElementById('tweeter').style.display = 'inline';
+    if (tweeter && !window.location.href.match(/temp/i)) {
+
+      tweeter.style.display = 'inline';
+
+      // old-skool.
+      tweeter.onclick = function(e) {
+
+        var webCirca1999,
+            msg,
+            serviceURL,
+            url,
+            str,
+            mapData,
+            xhr;
+
+        str = decodeURI(window.location.toString());
+
+        mapData = str.substr(str.indexOf('mapData')+8);
+
+        serviceURL = 'https://twitter.com/share/?text=';
+
+        msg = 'I designed an 80\'s-era arcade game level. Think you can beat it? Play and remix it here.';
+
+        xhr = new XMLHttpRequest();
+
+        xhr.onreadystatechange = function() {
+
+          var json;
+
+          if (xhr.readyState != 4) {
+            return;
+          }
+
+          if (xhr.status != 200 && xhr.status != 304) {
+            console('HTTP error ' + xhr.status);
+            return;
+          }
+
+          json = JSON.parse(xhr.responseText);
+
+          if (json && json.data && json.data.url) {
+
+            // go to the proper sharing URL
+            webCirca1999.location.replace(serviceURL + encodeURI(msg) + '&url=' + json.data.url);
+
+          }
+
+        }
+
+        // open ze window
+        webCirca1999 = window.open('about:blank', 'survivorTweetWindow', 'width=640,height=250');
+
+        // get the short URL
+        xhr.open('GET', 'shorturl/?url=' + mapData, true);
+
+        // true = post? I forget.
+        xhr.send();
+
+        // hack?
+        if (e.preventDefault) {
+          e.preventDefault();
+        } else {
+          e.returnValue = false;
+          e.cancelBubble = true;
+        }
+
+        return false;
+
+      }
+
     }
 
     return false;
