@@ -1,4 +1,4 @@
-﻿/** @license
+/** @license
  *
  * SURVIVOR: A HTML + CSS + JavaScript prototype
  * based on the Commodore 64 version of Survivor from 1983
@@ -336,6 +336,32 @@ function Survivor() {
     }())
 
   };
+  
+  // partial Function#bind polyfill from https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function/bind
+  
+  if (!Function.prototype.bind) {
+    Function.prototype.bind = function (oThis) {
+      if (typeof this !== "function") {
+        // closest thing possible to the ECMAScript 5 internal IsCallable function
+        throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");
+      }
+
+      var aArgs = Array.prototype.slice.call(arguments, 1), 
+          fToBind = this, 
+          fNOP = function () {},
+          fBound = function () {
+            return fToBind.apply(this instanceof fNOP
+                                   ? this
+                                   : oThis || window,
+                                 aArgs.concat(Array.prototype.slice.call(arguments)));
+          };
+
+      fNOP.prototype = this.prototype;
+      fBound.prototype = new fNOP();
+
+      return fBound;
+    };
+  }
 
   var features;
 
@@ -345,19 +371,19 @@ function Survivor() {
 
     var getAnimationFrame;
 
-    // http://paulirish.com/2011/requestanimationframe-for-smart-animating/
-    // // http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
-    //
-    // // requestAnimationFrame polyfill by Erik Möller
-    // // fixes from Paul Irish and Tino Zijdel
+    /**
+     *  http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+     *  http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
+     *
+     * requestAnimationFrame polyfill by Erik Möller
+     * fixes from Paul Irish and Tino Zijdel
+     */
 
     getAnimationFrame = (function() {
       var lastTime = 0;
       var vendors = ['ms', 'moz', 'webkit', 'o'];
       for (var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
         window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
-        window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame']
-                                   || window[vendors[x]+'CancelRequestAnimationFrame'];
       }
 
       if (!window.requestAnimationFrame)
@@ -369,11 +395,7 @@ function Survivor() {
             return id;
         }
 
-      if (!window.cancelAnimationFrame)
-          window.cancelAnimationFrame = function(id) {
-            clearTimeout(id);
-          }
-      return window.requestAnimationFrame;
+      return window.requestAnimationFrame.bind(window);
     }());
 
     if (getAnimationFrame && window.location.toString().match(/interval/i)) {
@@ -419,7 +441,7 @@ function Survivor() {
         prop: null
       },
 
-      'getAnimationFrame': getAnimationFrame ? getAnimationFrame.bind(window) : null
+      'getAnimationFrame': getAnimationFrame ? getAnimationFrame : null
 
     };
 
