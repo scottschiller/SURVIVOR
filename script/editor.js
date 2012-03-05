@@ -220,8 +220,8 @@
   var NODE_HEIGHT = 32;
 
   // minimum map sizes
-  var WORLD_COLS_MIN = 48;
-  var WORLD_ROWS_MIN = 48;
+  var WORLD_COLS_MIN = 42;
+  var WORLD_ROWS_MIN = 42;
 
   // assume defaults
   var WORLD_COLS = WORLD_COLS_MIN;
@@ -1413,8 +1413,8 @@
         // a valid map should have rows + columns, at least
         if (mapData.length && mapData[0].length) {
 
-          WORLD_COLS = WORLD_COLS || mapData[0].length;
-          WORLD_ROWS = WORLD_ROWS || mapData.length;
+          WORLD_COLS = (mapData[0].length > WORLD_COLS ? mapData[0].length : WORLD_COLS);
+          WORLD_ROWS = (mapData.length > WORLD_ROWS ? mapData.length : WORLD_ROWS);
 
         }
 

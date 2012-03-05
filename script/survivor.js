@@ -150,6 +150,8 @@ function Survivor() {
   var DEFAULT_HOME_ROW = 20;
   var DEFAULT_HOME_COL = 8;
 
+  var DEFAULT_SPACEBALLS = 8;
+
   // for transform-based window scrolling vs. traditional scrolling, transform() may be faster under Firefox
   // (but causes some visual glitches in Webkit)
   var is_firefox = !!(navigator.userAgent.match(/firefox/i));
@@ -7674,7 +7676,7 @@ console.log('result of collision check with spaceball', hit);
   function createSpaceBalls() {
 
     var i, j, k, l;
-    var spaceBallCount = 8;
+    var spaceBallCount = DEFAULT_SPACEBALLS;
 
     var freeSpaces = [];
     var location;
@@ -7817,6 +7819,11 @@ console.log('result of collision check with spaceball', hit);
     DEFAULT_HOME_ROW = 1;
     DEFAULT_HOME_COL = 1;
 
+    // and also, no spaceballs for custom levels.
+    // this is because I'm lazy and don't have an algorithm to identify completely-enclosed base areas
+    // (see dotted characters in above map), which are used to indicate "occupied" space when placing spaceballs.
+    DEFAULT_SPACEBALLS = 0;
+
   }
 
   objects.mapData = mapData;
@@ -7895,7 +7902,6 @@ console.log('result of collision check with spaceball', hit);
     game.data.world_height = (game.data.NODE_HEIGHT * mapData.length) + 1;
 
     // record # of columns + rows
-    // TODO: One-off error?
     game.data.world_cols = mapData[0].length - 1;
     game.data.world_rows = mapData.length - 1;
 
@@ -8308,14 +8314,14 @@ function go_go_go() {
           if (json && json.data && json.data.url) {
 
             // go to the proper sharing URL
-            webCirca1999.location.replace(serviceURL + encodeURI(msg) + '&url=' + json.data.url);
+            webCirca1999.go(serviceURL + encodeURIComponent(msg) + '&url=' + json.data.url);
 
           }
 
         }
 
         // open ze window
-        webCirca1999 = window.open('about:blank', 'survivorTweetWindow', 'width=640,height=250');
+        webCirca1999 = window.open('shorturl/blank.html', 'survivorTweetWindow', 'width=640,height=250');
 
         // get the short URL
         xhr.open('GET', 'shorturl/?url=' + mapData, true);
