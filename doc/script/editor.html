@@ -474,8 +474,8 @@ body .il { color: #666666 }                     /* Literal.Number.Integer.Long *
         <p>minimum map sizes</p>
       </td>
       <td class=code>
-        <div class='highlight'><pre>  <span class="kd">var</span> <span class="nx">WORLD_COLS_MIN</span> <span class="o">=</span> <span class="mi">48</span><span class="p">;</span>
-  <span class="kd">var</span> <span class="nx">WORLD_ROWS_MIN</span> <span class="o">=</span> <span class="mi">48</span><span class="p">;</span></pre></div>
+        <div class='highlight'><pre>  <span class="kd">var</span> <span class="nx">WORLD_COLS_MIN</span> <span class="o">=</span> <span class="mi">42</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">WORLD_ROWS_MIN</span> <span class="o">=</span> <span class="mi">42</span><span class="p">;</span></pre></div>
       </td>
     </tr>
     <tr id='section-7'>
@@ -2450,8 +2450,8 @@ deleteAtPosition(data.lastAnchor.col, data.lastAnchor.row);</p>
       <td class=code>
         <div class='highlight'><pre>        <span class="k">if</span> <span class="p">(</span><span class="nx">mapData</span><span class="p">.</span><span class="nx">length</span> <span class="o">&amp;&amp;</span> <span class="nx">mapData</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
 
-          <span class="nx">WORLD_COLS</span> <span class="o">=</span> <span class="nx">WORLD_COLS</span> <span class="o">||</span> <span class="nx">mapData</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">length</span><span class="p">;</span>
-          <span class="nx">WORLD_ROWS</span> <span class="o">=</span> <span class="nx">WORLD_ROWS</span> <span class="o">||</span> <span class="nx">mapData</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
+          <span class="nx">WORLD_COLS</span> <span class="o">=</span> <span class="p">(</span><span class="nx">mapData</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">length</span> <span class="o">&gt;</span> <span class="nx">WORLD_COLS</span> <span class="o">?</span> <span class="nx">mapData</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">length</span> <span class="o">:</span> <span class="nx">WORLD_COLS</span><span class="p">);</span>
+          <span class="nx">WORLD_ROWS</span> <span class="o">=</span> <span class="p">(</span><span class="nx">mapData</span><span class="p">.</span><span class="nx">length</span> <span class="o">&gt;</span> <span class="nx">WORLD_ROWS</span> <span class="o">?</span> <span class="nx">mapData</span><span class="p">.</span><span class="nx">length</span> <span class="o">:</span> <span class="nx">WORLD_ROWS</span><span class="p">);</span>
 
         <span class="p">}</span>
 

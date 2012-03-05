@@ -438,7 +438,9 @@ body .il { color: #666666 }                     /* Literal.Number.Integer.Long *
   <span class="kd">var</span> <span class="nx">DEFAULT_SMARTBOMBS</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
 
   <span class="kd">var</span> <span class="nx">DEFAULT_HOME_ROW</span> <span class="o">=</span> <span class="mi">20</span><span class="p">;</span>
-  <span class="kd">var</span> <span class="nx">DEFAULT_HOME_COL</span> <span class="o">=</span> <span class="mi">8</span><span class="p">;</span></pre></div>
+  <span class="kd">var</span> <span class="nx">DEFAULT_HOME_COL</span> <span class="o">=</span> <span class="mi">8</span><span class="p">;</span>
+
+  <span class="kd">var</span> <span class="nx">DEFAULT_SPACEBALLS</span> <span class="o">=</span> <span class="mi">8</span><span class="p">;</span></pre></div>
       </td>
     </tr>
     <tr id='section-8'>
@@ -628,7 +630,7 @@ body .il { color: #666666 }                     /* Literal.Number.Integer.Long *
 
     <span class="nx">events</span><span class="o">:</span> <span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
 
-      <span class="kd">var</span> <span class="nx">add</span><span class="p">,</span> <span class="nx">remove</span><span class="p">;</span>
+      <span class="kd">var</span> <span class="nx">add</span><span class="p">,</span> <span class="nx">remove</span><span class="p">,</span> <span class="nx">preventDefault</span><span class="p">;</span>
 
       <span class="nx">add</span> <span class="o">=</span> <span class="p">(</span><span class="k">typeof</span> <span class="nb">window</span><span class="p">.</span><span class="nx">addEventListener</span> <span class="o">!==</span> <span class="s1">&#39;undefined&#39;</span> <span class="o">?</span> <span class="kd">function</span><span class="p">(</span><span class="nx">o</span><span class="p">,</span> <span class="nx">evtName</span><span class="p">,</span> <span class="nx">evtHandler</span><span class="p">)</span> <span class="p">{</span>
         <span class="k">return</span> <span class="nx">o</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="nx">evtName</span><span class="p">,</span><span class="nx">evtHandler</span><span class="p">,</span><span class="kc">false</span><span class="p">);</span>
@@ -642,8 +644,18 @@ body .il { color: #666666 }                     /* Literal.Number.Integer.Long *
         <span class="k">return</span> <span class="nx">o</span><span class="p">.</span><span class="nx">detachEvent</span><span class="p">(</span><span class="s1">&#39;on&#39;</span><span class="o">+</span><span class="nx">evtName</span><span class="p">,</span><span class="nx">evtHandler</span><span class="p">);</span>
       <span class="p">});</span>
 
+      <span class="nx">preventDefault</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">preventDefault</span><span class="p">)</span> <span class="p">{</span>
+          <span class="nx">e</span><span class="p">.</span><span class="nx">preventDefault</span><span class="p">();</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+          <span class="nx">e</span><span class="p">.</span><span class="nx">returnValue</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+          <span class="nx">e</span><span class="p">.</span><span class="nx">cancelBubble</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+        <span class="p">}</span>
+      <span class="p">};</span>
+
       <span class="k">return</span> <span class="p">{</span>
         <span class="nx">add</span><span class="o">:</span> <span class="nx">add</span><span class="p">,</span>
+        <span class="nx">preventDefault</span><span class="o">:</span> <span class="nx">preventDefault</span><span class="p">,</span>
         <span class="nx">remove</span><span class="o">:</span> <span class="nx">remove</span>
       <span class="p">};</span>
 
@@ -11386,7 +11398,7 @@ TODO: Remove this.</p>
   <span class="kd">function</span> <span class="nx">createSpaceBalls</span><span class="p">()</span> <span class="p">{</span>
 
     <span class="kd">var</span> <span class="nx">i</span><span class="p">,</span> <span class="nx">j</span><span class="p">,</span> <span class="nx">k</span><span class="p">,</span> <span class="nx">l</span><span class="p">;</span>
-    <span class="kd">var</span> <span class="nx">spaceBallCount</span> <span class="o">=</span> <span class="mi">8</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">spaceBallCount</span> <span class="o">=</span> <span class="nx">DEFAULT_SPACEBALLS</span><span class="p">;</span>
 
     <span class="kd">var</span> <span class="nx">freeSpaces</span> <span class="o">=</span> <span class="p">[];</span>
     <span class="kd">var</span> <span class="nx">location</span><span class="p">;</span>
@@ -11588,7 +11600,20 @@ space inside bases, not safe to be occupied is marked by a middle dot &ndash; Ge
       </td>
       <td class=code>
         <div class='highlight'><pre>    <span class="nx">DEFAULT_HOME_ROW</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-    <span class="nx">DEFAULT_HOME_COL</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="nx">DEFAULT_HOME_COL</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span></pre></div>
+      </td>
+    </tr>
+    <tr id='section-457'>
+      <td class=docs>
+        <div class="pilwrap">
+          <a class="pilcrow" href="#section-457">&#182;</a>
+        </div>
+        <p>and also, no spaceballs for custom levels.
+this is because I&rsquo;m lazy and don&rsquo;t have an algorithm to identify completely-enclosed base areas
+(see dotted characters in above map), which are used to indicate &ldquo;occupied&rdquo; space when placing spaceballs.</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre>    <span class="nx">DEFAULT_SPACEBALLS</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 
   <span class="p">}</span>
 
@@ -11631,10 +11656,10 @@ space inside bases, not safe to be occupied is marked by a middle dot &ndash; Ge
     <span class="k">for</span> <span class="p">(</span><span class="nx">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="nx">i</span><span class="o">&lt;</span><span class="nx">j</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span></pre></div>
       </td>
     </tr>
-    <tr id='section-457'>
+    <tr id='section-458'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-457">&#182;</a>
+          <a class="pilcrow" href="#section-458">&#182;</a>
         </div>
         <p>data for one row</p>
       </td>
@@ -11646,10 +11671,10 @@ space inside bases, not safe to be occupied is marked by a middle dot &ndash; Ge
       <span class="k">for</span> <span class="p">(</span><span class="nx">k</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="nx">k</span><span class="o">&lt;</span><span class="nx">l</span><span class="p">;</span> <span class="nx">k</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span></pre></div>
       </td>
     </tr>
-    <tr id='section-458'>
+    <tr id='section-459'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-458">&#182;</a>
+          <a class="pilcrow" href="#section-459">&#182;</a>
         </div>
         <p>find the character and create the relevant object</p>
       </td>
@@ -11680,10 +11705,10 @@ space inside bases, not safe to be occupied is marked by a middle dot &ndash; Ge
     <span class="nx">objects</span><span class="p">.</span><span class="nx">baseController</span><span class="p">.</span><span class="nx">findActiveBases</span><span class="p">();</span></pre></div>
       </td>
     </tr>
-    <tr id='section-459'>
+    <tr id='section-460'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-459">&#182;</a>
+          <a class="pilcrow" href="#section-460">&#182;</a>
         </div>
         <p>set world dimensions</p>
       </td>
@@ -11692,23 +11717,22 @@ space inside bases, not safe to be occupied is marked by a middle dot &ndash; Ge
     <span class="nx">game</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">world_height</span> <span class="o">=</span> <span class="p">(</span><span class="nx">game</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">NODE_HEIGHT</span> <span class="o">*</span> <span class="nx">mapData</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span></pre></div>
       </td>
     </tr>
-    <tr id='section-460'>
+    <tr id='section-461'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-460">&#182;</a>
+          <a class="pilcrow" href="#section-461">&#182;</a>
         </div>
-        <p>record # of columns + rows
-TODO: One-off error?</p>
+        <p>record # of columns + rows</p>
       </td>
       <td class=code>
         <div class='highlight'><pre>    <span class="nx">game</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">world_cols</span> <span class="o">=</span> <span class="nx">mapData</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
     <span class="nx">game</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">world_rows</span> <span class="o">=</span> <span class="nx">mapData</span><span class="p">.</span><span class="nx">length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span></pre></div>
       </td>
     </tr>
-    <tr id='section-461'>
+    <tr id='section-462'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-461">&#182;</a>
+          <a class="pilcrow" href="#section-462">&#182;</a>
         </div>
         <p>apply to DOM</p>
       </td>
@@ -11719,10 +11743,10 @@ TODO: One-off error?</p>
     <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;world set to &#39;</span> <span class="o">+</span> <span class="nx">game</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">world_width</span> <span class="o">+</span> <span class="s1">&#39; x &#39;</span> <span class="o">+</span> <span class="nx">game</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">world_height</span><span class="p">);</span></pre></div>
       </td>
     </tr>
-    <tr id='section-462'>
+    <tr id='section-463'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-462">&#182;</a>
+          <a class="pilcrow" href="#section-463">&#182;</a>
         </div>
         <p>reset the window scroll, if any (may be remembered from last time)</p>
       </td>
@@ -11764,10 +11788,10 @@ TODO: One-off error?</p>
   <span class="kd">function</span> <span class="nx">incrementAudioPitch</span><span class="p">()</span> <span class="p">{</span></pre></div>
       </td>
     </tr>
-    <tr id='section-463'>
+    <tr id='section-464'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-463">&#182;</a>
+          <a class="pilcrow" href="#section-464">&#182;</a>
         </div>
         <p>throttle audible pitch increase calls</p>
       </td>
@@ -11787,10 +11811,10 @@ TODO: One-off error?</p>
   <span class="kd">function</span> <span class="nx">reset</span><span class="p">()</span> <span class="p">{</span></pre></div>
       </td>
     </tr>
-    <tr id='section-464'>
+    <tr id='section-465'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-464">&#182;</a>
+          <a class="pilcrow" href="#section-465">&#182;</a>
         </div>
         <p>oh, what a hack! (destroy the world markup)</p>
       </td>
@@ -11798,10 +11822,10 @@ TODO: One-off error?</p>
         <div class='highlight'><pre></pre></div>
       </td>
     </tr>
-    <tr id='section-465'>
+    <tr id='section-466'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-465">&#182;</a>
+          <a class="pilcrow" href="#section-466">&#182;</a>
         </div>
         <p>TODO: Hide turret gunfire, which may barf when trying to remove nodes that can&rsquo;t be found after this point.</p>
       </td>
@@ -11809,10 +11833,10 @@ TODO: One-off error?</p>
         <div class='highlight'><pre>    <span class="nx">dom</span><span class="p">.</span><span class="nx">world</span><span class="p">.</span><span class="nx">innerHTML</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">;</span></pre></div>
       </td>
     </tr>
-    <tr id='section-466'>
+    <tr id='section-467'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-466">&#182;</a>
+          <a class="pilcrow" href="#section-467">&#182;</a>
         </div>
         <p>reset the maps</p>
       </td>
@@ -11823,10 +11847,10 @@ TODO: One-off error?</p>
     <span class="nx">objects</span><span class="p">.</span><span class="nx">spaceBallMap</span><span class="p">.</span><span class="nx">reset</span><span class="p">();</span></pre></div>
       </td>
     </tr>
-    <tr id='section-467'>
+    <tr id='section-468'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-467">&#182;</a>
+          <a class="pilcrow" href="#section-468">&#182;</a>
         </div>
         <p>reset and re-append objects to the grid as needed</p>
       </td>
@@ -11842,10 +11866,10 @@ TODO: One-off error?</p>
     <span class="p">}</span></pre></div>
       </td>
     </tr>
-    <tr id='section-468'>
+    <tr id='section-469'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-468">&#182;</a>
+          <a class="pilcrow" href="#section-469">&#182;</a>
         </div>
         <p>reset the spaceballs, too</p>
       </td>
@@ -11855,10 +11879,10 @@ TODO: One-off error?</p>
     <span class="p">}</span></pre></div>
       </td>
     </tr>
-    <tr id='section-469'>
+    <tr id='section-470'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-469">&#182;</a>
+          <a class="pilcrow" href="#section-470">&#182;</a>
         </div>
         <p>reset the base controller, bringing all bases back to life</p>
       </td>
@@ -11866,10 +11890,10 @@ TODO: One-off error?</p>
         <div class='highlight'><pre>    <span class="nx">game</span><span class="p">.</span><span class="nx">objects</span><span class="p">.</span><span class="nx">baseController</span><span class="p">.</span><span class="nx">reset</span><span class="p">();</span></pre></div>
       </td>
     </tr>
-    <tr id='section-470'>
+    <tr id='section-471'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-470">&#182;</a>
+          <a class="pilcrow" href="#section-471">&#182;</a>
         </div>
         <p>re-append ship, which will have been nuked as well</p>
       </td>
@@ -11879,10 +11903,10 @@ TODO: One-off error?</p>
     <span class="nx">game</span><span class="p">.</span><span class="nx">dom</span><span class="p">.</span><span class="nx">world</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">game</span><span class="p">.</span><span class="nx">dom</span><span class="p">.</span><span class="nx">worldFragment</span><span class="p">);</span></pre></div>
       </td>
     </tr>
-    <tr id='section-471'>
+    <tr id='section-472'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-471">&#182;</a>
+          <a class="pilcrow" href="#section-472">&#182;</a>
         </div>
         <p>set default heartbeat rate</p>
       </td>
@@ -11916,10 +11940,10 @@ TODO: One-off error?</p>
       <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">toString</span><span class="p">().</span><span class="nx">match</span><span class="p">(</span><span class="sr">/mapData/i</span><span class="p">))</span> <span class="p">{</span></pre></div>
       </td>
     </tr>
-    <tr id='section-472'>
+    <tr id='section-473'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-472">&#182;</a>
+          <a class="pilcrow" href="#section-473">&#182;</a>
         </div>
         <p>assign the link including the mapData, replacing MAP<em>FREE</em>SPACE<em>CHAR with MAP</em>ALT<em>FREE</em>SPACE_CHAR</p>
       </td>
@@ -11929,10 +11953,10 @@ TODO: One-off error?</p>
         <span class="nx">o</span><span class="p">.</span><span class="nx">innerHTML</span> <span class="o">=</span> <span class="s1">&#39;Remix this level&#39;</span><span class="p">;</span></pre></div>
       </td>
     </tr>
-    <tr id='section-473'>
+    <tr id='section-474'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-473">&#182;</a>
+          <a class="pilcrow" href="#section-474">&#182;</a>
         </div>
         <p>show the &ldquo;play original game&rdquo; link, too</p>
       </td>
@@ -11988,10 +12012,10 @@ TODO: One-off error?</p>
       <span class="nx">o</span><span class="p">.</span><span class="nx">onmousedown</span> <span class="o">=</span> <span class="nx">mouseDownHandler</span><span class="p">;</span></pre></div>
       </td>
     </tr>
-    <tr id='section-474'>
+    <tr id='section-475'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-474">&#182;</a>
+          <a class="pilcrow" href="#section-475">&#182;</a>
         </div>
         <p>and get the help screen, too</p>
       </td>
@@ -12028,10 +12052,10 @@ TODO: One-off error?</p>
     <span class="nx">objects</span><span class="p">.</span><span class="nx">statsController</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">StatsController</span><span class="p">();</span></pre></div>
       </td>
     </tr>
-    <tr id='section-475'>
+    <tr id='section-476'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-475">&#182;</a>
+          <a class="pilcrow" href="#section-476">&#182;</a>
         </div>
         <p>2D array tracking references to moving objects</p>
       </td>
@@ -12054,10 +12078,10 @@ TODO: One-off error?</p>
     <span class="nx">createSpaceBalls</span><span class="p">();</span></pre></div>
       </td>
     </tr>
-    <tr id='section-476'>
+    <tr id='section-477'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-476">&#182;</a>
+          <a class="pilcrow" href="#section-477">&#182;</a>
         </div>
         <p>append fragment containing everything to DOM</p>
       </td>
@@ -12067,10 +12091,10 @@ TODO: One-off error?</p>
     <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;world created&#39;</span><span class="p">);</span></pre></div>
       </td>
     </tr>
-    <tr id='section-477'>
+    <tr id='section-478'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-477">&#182;</a>
+          <a class="pilcrow" href="#section-478">&#182;</a>
         </div>
         <p>position ship
 hack &ndash; otherwise, window scroll doesn&rsquo;t quite exist yet or something and doesn&rsquo;t get picked up.</p>
@@ -12103,10 +12127,10 @@ hack &ndash; otherwise, window scroll doesn&rsquo;t quite exist yet or something
     <span class="nx">assignHelpLink</span><span class="p">();</span></pre></div>
       </td>
     </tr>
-    <tr id='section-478'>
+    <tr id='section-479'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-478">&#182;</a>
+          <a class="pilcrow" href="#section-479">&#182;</a>
         </div>
         <p>start game loop</p>
       </td>
@@ -12182,10 +12206,10 @@ hack &ndash; otherwise, window scroll doesn&rsquo;t quite exist yet or something
 <span class="kd">function</span> <span class="nx">go_go_go</span><span class="p">()</span> <span class="p">{</span></pre></div>
       </td>
     </tr>
-    <tr id='section-479'>
+    <tr id='section-480'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-479">&#182;</a>
+          <a class="pilcrow" href="#section-480">&#182;</a>
         </div>
         <p>function name: inside Flickr-circa-2004 joke.</p>
       </td>
@@ -12193,15 +12217,17 @@ hack &ndash; otherwise, window scroll doesn&rsquo;t quite exist yet or something
         <div class='highlight'><pre></pre></div>
       </td>
     </tr>
-    <tr id='section-480'>
+    <tr id='section-481'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-480">&#182;</a>
+          <a class="pilcrow" href="#section-481">&#182;</a>
         </div>
         <p>hackish: bypass loading / intro screens if noIntro, or if mapData and offline (file://) etc.</p>
       </td>
       <td class=code>
-        <div class='highlight'><pre>  <span class="kd">var</span> <span class="nx">bypassIntro</span> <span class="o">=</span> <span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/nointro/i</span><span class="p">)</span> <span class="o">||</span> <span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">referrer</span> <span class="o">&amp;&amp;</span> <span class="nb">document</span><span class="p">.</span><span class="nx">referrer</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/editor/i</span><span class="p">)</span> <span class="o">||</span> <span class="p">(</span><span class="o">!</span><span class="nb">document</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">protocol</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/http/i</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="nb">document</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/mapdata/i</span><span class="p">)))),</span>
+        <div class='highlight'><pre>  <span class="kd">var</span> <span class="nx">tweeter</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;tweeter&#39;</span><span class="p">);</span>
+
+  <span class="kd">var</span> <span class="nx">bypassIntro</span> <span class="o">=</span> <span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/nointro/i</span><span class="p">)</span> <span class="o">||</span> <span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">referrer</span> <span class="o">&amp;&amp;</span> <span class="nb">document</span><span class="p">.</span><span class="nx">referrer</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/editor/i</span><span class="p">)</span> <span class="o">||</span> <span class="p">(</span><span class="o">!</span><span class="nb">document</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">protocol</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/http/i</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="nb">document</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/mapdata/i</span><span class="p">)))),</span>
       <span class="nx">l0</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;loading0&#39;</span><span class="p">),</span>
       <span class="nx">l1</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;loading1&#39;</span><span class="p">),</span>
       <span class="nx">l2</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;loading2&#39;</span><span class="p">);</span>
@@ -12223,10 +12249,10 @@ hack &ndash; otherwise, window scroll doesn&rsquo;t quite exist yet or something
   <span class="k">if</span> <span class="p">(</span><span class="nx">bypassIntro</span><span class="p">)</span> <span class="p">{</span></pre></div>
       </td>
     </tr>
-    <tr id='section-481'>
+    <tr id='section-482'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-481">&#182;</a>
+          <a class="pilcrow" href="#section-482">&#182;</a>
         </div>
         <p>go directly to the game.</p>
       </td>
@@ -12235,16 +12261,132 @@ hack &ndash; otherwise, window scroll doesn&rsquo;t quite exist yet or something
     <span class="nx">startGame</span><span class="p">();</span></pre></div>
       </td>
     </tr>
-    <tr id='section-482'>
+    <tr id='section-483'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-482">&#182;</a>
+          <a class="pilcrow" href="#section-483">&#182;</a>
         </div>
         <p>and show the &ldquo;tweeter&rdquo; link, encouraging creators to share (maybe)</p>
       </td>
       <td class=code>
-        <div class='highlight'><pre>    <span class="k">if</span> <span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;tweeter&#39;</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/temp/i</span><span class="p">))</span> <span class="p">{</span>
-      <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;tweeter&#39;</span><span class="p">).</span><span class="nx">style</span><span class="p">.</span><span class="nx">display</span> <span class="o">=</span> <span class="s1">&#39;inline&#39;</span><span class="p">;</span>
+        <div class='highlight'><pre>    <span class="k">if</span> <span class="p">(</span><span class="nx">tweeter</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/temp/i</span><span class="p">))</span> <span class="p">{</span>
+
+      <span class="nx">tweeter</span><span class="p">.</span><span class="nx">style</span><span class="p">.</span><span class="nx">display</span> <span class="o">=</span> <span class="s1">&#39;inline&#39;</span><span class="p">;</span></pre></div>
+      </td>
+    </tr>
+    <tr id='section-484'>
+      <td class=docs>
+        <div class="pilwrap">
+          <a class="pilcrow" href="#section-484">&#182;</a>
+        </div>
+        <p>old-skool.</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre>      <span class="nx">tweeter</span><span class="p">.</span><span class="nx">onclick</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
+
+        <span class="kd">var</span> <span class="nx">webCirca1999</span><span class="p">,</span>
+            <span class="nx">msg</span><span class="p">,</span>
+            <span class="nx">serviceURL</span><span class="p">,</span>
+            <span class="nx">url</span><span class="p">,</span>
+            <span class="nx">str</span><span class="p">,</span>
+            <span class="nx">mapData</span><span class="p">,</span>
+            <span class="nx">xhr</span><span class="p">;</span>
+
+        <span class="nx">str</span> <span class="o">=</span> <span class="nb">decodeURI</span><span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">toString</span><span class="p">());</span>
+
+        <span class="nx">mapData</span> <span class="o">=</span> <span class="nx">str</span><span class="p">.</span><span class="nx">substr</span><span class="p">(</span><span class="nx">str</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="s1">&#39;mapData&#39;</span><span class="p">)</span><span class="o">+</span><span class="mi">8</span><span class="p">);</span>
+
+        <span class="nx">serviceURL</span> <span class="o">=</span> <span class="s1">&#39;https://twitter.com/share/?text=&#39;</span><span class="p">;</span>
+
+        <span class="nx">msg</span> <span class="o">=</span> <span class="s1">&#39;I designed an 80\&#39;s-era arcade game level. Think you can beat it? Play and remix it here.&#39;</span><span class="p">;</span>
+
+        <span class="nx">xhr</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">XMLHttpRequest</span><span class="p">();</span>
+
+        <span class="nx">xhr</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+
+          <span class="kd">var</span> <span class="nx">json</span><span class="p">;</span>
+
+          <span class="k">if</span> <span class="p">(</span><span class="nx">xhr</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">!=</span> <span class="mi">4</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span><span class="p">;</span>
+          <span class="p">}</span>
+
+          <span class="k">if</span> <span class="p">(</span><span class="nx">xhr</span><span class="p">.</span><span class="nx">status</span> <span class="o">!=</span> <span class="mi">200</span> <span class="o">&amp;&amp;</span> <span class="nx">xhr</span><span class="p">.</span><span class="nx">status</span> <span class="o">!=</span> <span class="mi">304</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">console</span><span class="p">(</span><span class="s1">&#39;HTTP error &#39;</span> <span class="o">+</span> <span class="nx">xhr</span><span class="p">.</span><span class="nx">status</span><span class="p">);</span>
+            <span class="k">return</span><span class="p">;</span>
+          <span class="p">}</span>
+
+          <span class="nx">json</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">xhr</span><span class="p">.</span><span class="nx">responseText</span><span class="p">);</span>
+
+          <span class="k">if</span> <span class="p">(</span><span class="nx">json</span> <span class="o">&amp;&amp;</span> <span class="nx">json</span><span class="p">.</span><span class="nx">data</span> <span class="o">&amp;&amp;</span> <span class="nx">json</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">url</span><span class="p">)</span> <span class="p">{</span></pre></div>
+      </td>
+    </tr>
+    <tr id='section-485'>
+      <td class=docs>
+        <div class="pilwrap">
+          <a class="pilcrow" href="#section-485">&#182;</a>
+        </div>
+        <p>go to the proper sharing URL</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre>            <span class="nx">webCirca1999</span><span class="p">.</span><span class="nx">go</span><span class="p">(</span><span class="nx">serviceURL</span> <span class="o">+</span> <span class="nb">encodeURIComponent</span><span class="p">(</span><span class="nx">msg</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&amp;url=&#39;</span> <span class="o">+</span> <span class="nx">json</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">url</span><span class="p">);</span>
+
+          <span class="p">}</span>
+
+        <span class="p">}</span></pre></div>
+      </td>
+    </tr>
+    <tr id='section-486'>
+      <td class=docs>
+        <div class="pilwrap">
+          <a class="pilcrow" href="#section-486">&#182;</a>
+        </div>
+        <p>open ze window</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre>        <span class="nx">webCirca1999</span> <span class="o">=</span> <span class="nb">window</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="s1">&#39;shorturl/blank.html&#39;</span><span class="p">,</span> <span class="s1">&#39;survivorTweetWindow&#39;</span><span class="p">,</span> <span class="s1">&#39;width=640,height=250&#39;</span><span class="p">);</span></pre></div>
+      </td>
+    </tr>
+    <tr id='section-487'>
+      <td class=docs>
+        <div class="pilwrap">
+          <a class="pilcrow" href="#section-487">&#182;</a>
+        </div>
+        <p>get the short URL</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre>        <span class="nx">xhr</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;shorturl/?url=&#39;</span> <span class="o">+</span> <span class="nx">mapData</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span></pre></div>
+      </td>
+    </tr>
+    <tr id='section-488'>
+      <td class=docs>
+        <div class="pilwrap">
+          <a class="pilcrow" href="#section-488">&#182;</a>
+        </div>
+        <p>true = post? I forget.</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre>        <span class="nx">xhr</span><span class="p">.</span><span class="nx">send</span><span class="p">();</span></pre></div>
+      </td>
+    </tr>
+    <tr id='section-489'>
+      <td class=docs>
+        <div class="pilwrap">
+          <a class="pilcrow" href="#section-489">&#182;</a>
+        </div>
+        <p>hack?</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre>        <span class="k">if</span> <span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">preventDefault</span><span class="p">)</span> <span class="p">{</span>
+          <span class="nx">e</span><span class="p">.</span><span class="nx">preventDefault</span><span class="p">();</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+          <span class="nx">e</span><span class="p">.</span><span class="nx">returnValue</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+          <span class="nx">e</span><span class="p">.</span><span class="nx">cancelBubble</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+
+      <span class="p">}</span>
+
     <span class="p">}</span>
 
     <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
@@ -12252,10 +12394,10 @@ hack &ndash; otherwise, window scroll doesn&rsquo;t quite exist yet or something
   <span class="p">}</span></pre></div>
       </td>
     </tr>
-    <tr id='section-483'>
+    <tr id='section-490'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-483">&#182;</a>
+          <a class="pilcrow" href="#section-490">&#182;</a>
         </div>
         <p>first, make the noise.</p>
       </td>
@@ -12263,10 +12405,10 @@ hack &ndash; otherwise, window scroll doesn&rsquo;t quite exist yet or something
         <div class='highlight'><pre>  <span class="k">if</span> <span class="p">(</span><span class="nx">soundManager</span><span class="p">.</span><span class="nx">ok</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nx">navigator</span><span class="p">.</span><span class="nx">userAgent</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/mobile/i</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nx">IS_MUTED</span><span class="p">)</span> <span class="p">{</span></pre></div>
       </td>
     </tr>
-    <tr id='section-484'>
+    <tr id='section-491'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-484">&#182;</a>
+          <a class="pilcrow" href="#section-491">&#182;</a>
         </div>
         <p>Audio sample credit / thank-you: YouTube user &ldquo;daddlertl2&rdquo;, last active 2 years ago (as of February 2012)
 http://youtu.be/_K7MUkxjeaM
@@ -12282,10 +12424,10 @@ video &ldquo;C64-Diskette wird formatiert (mit Basic Befehl) &rdquo; uploaded Ma
     <span class="nx">_1541</span><span class="p">.</span><span class="nx">onPosition</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span></pre></div>
       </td>
     </tr>
-    <tr id='section-485'>
+    <tr id='section-492'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-485">&#182;</a>
+          <a class="pilcrow" href="#section-492">&#182;</a>
         </div>
         <p>SEARCHING FOR SURVIVOR-2012
 at this point, the Commodore 1541-II floppy drive&rsquo;s head knocking sound is playing.
@@ -12300,10 +12442,10 @@ if you are both technically correct and reading this comment, then you win appro
     <span class="nx">_1541</span><span class="p">.</span><span class="nx">onPosition</span><span class="p">(</span><span class="mi">2000</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span></pre></div>
       </td>
     </tr>
-    <tr id='section-486'>
+    <tr id='section-493'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-486">&#182;</a>
+          <a class="pilcrow" href="#section-493">&#182;</a>
         </div>
         <p>LOADING</p>
       </td>
@@ -12314,10 +12456,10 @@ if you are both technically correct and reading this comment, then you win appro
     <span class="nx">_1541</span><span class="p">.</span><span class="nx">onPosition</span><span class="p">(</span><span class="mi">5000</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span></pre></div>
       </td>
     </tr>
-    <tr id='section-487'>
+    <tr id='section-494'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-487">&#182;</a>
+          <a class="pilcrow" href="#section-494">&#182;</a>
         </div>
         <p>READY.
 RUN</p>
@@ -12393,10 +12535,10 @@ RUN</p>
     <span class="k">if</span> <span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">referrer</span> <span class="o">&amp;&amp;</span> <span class="nb">document</span><span class="p">.</span><span class="nx">referrer</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/editor/i</span><span class="p">))</span> <span class="p">{</span></pre></div>
       </td>
     </tr>
-    <tr id='section-488'>
+    <tr id='section-495'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-488">&#182;</a>
+          <a class="pilcrow" href="#section-495">&#182;</a>
         </div>
         <p>if coming from the editor, skip straight to the goods.</p>
       </td>
@@ -12405,10 +12547,10 @@ RUN</p>
     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span></pre></div>
       </td>
     </tr>
-    <tr id='section-489'>
+    <tr id='section-496'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-489">&#182;</a>
+          <a class="pilcrow" href="#section-496">&#182;</a>
         </div>
         <p>let &ldquo;READY.&rdquo; show for a second.</p>
       </td>
@@ -12422,10 +12564,10 @@ RUN</p>
 <span class="p">}</span> <span class="k">else</span> <span class="p">{</span></pre></div>
       </td>
     </tr>
-    <tr id='section-490'>
+    <tr id='section-497'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-490">&#182;</a>
+          <a class="pilcrow" href="#section-497">&#182;</a>
         </div>
         <p>no sound effects for external use.
 let &ldquo;READY.&rdquo; show for a second.</p>
@@ -12437,10 +12579,10 @@ let &ldquo;READY.&rdquo; show for a second.</p>
 <span class="p">}</span></pre></div>
       </td>
     </tr>
-    <tr id='section-491'>
+    <tr id='section-498'>
       <td class=docs>
         <div class="pilwrap">
-          <a class="pilcrow" href="#section-491">&#182;</a>
+          <a class="pilcrow" href="#section-498">&#182;</a>
         </div>
         <p>invocation closure</p>
 
