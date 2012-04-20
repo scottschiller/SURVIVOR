@@ -440,6 +440,32 @@ function Survivor() {
     }())
 
   };
+  
+  // partial Function#bind polyfill from https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function/bind
+  
+  if (!Function.prototype.bind) {
+    Function.prototype.bind = function (oThis) {
+      if (typeof this !== "function") {
+        // closest thing possible to the ECMAScript 5 internal IsCallable function
+        throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");
+      }
+
+      var aArgs = Array.prototype.slice.call(arguments, 1), 
+          fToBind = this, 
+          fNOP = function () {},
+          fBound = function () {
+            return fToBind.apply(this instanceof fNOP
+                                   ? this
+                                   : oThis || window,
+                                 aArgs.concat(Array.prototype.slice.call(arguments)));
+          };
+
+      fNOP.prototype = this.prototype;
+      fBound.prototype = new fNOP();
+
+      return fBound;
+    };
+  }
 
   var features;
 
@@ -450,23 +476,31 @@ function Survivor() {
     var getAnimationFrame;
 
     /**
-     * hat tip: paul irish
-     * http://paulirish.com/2011/requestanimationframe-for-smart-animating/
-     * https://gist.github.com/838785
+     *  http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+     *  http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
+     *
+     * requestAnimationFrame polyfill by Erik Möller
+     * fixes from Paul Irish and Tino Zijdel
      */
 
     getAnimationFrame = (function() {
-      return window.requestAnimationFrame  ||
-        window.webkitRequestAnimationFrame ||
-        window.mozRequestAnimationFrame    ||
-        window.oRequestAnimationFrame      ||
-        window.msRequestAnimationFrame     ||
-        null;
-    }());
+      var lastTime = 0;
+      var vendors = ['ms', 'moz', 'webkit', 'o'];
+      for (var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+      }
 
-    // TODO: sort out "illegal invocation" Chrome errors when trying to call wrapped function.
-    // also, it delivers lower FPS at time of writing anyways.
-    getAnimationFrame = null;
+      if (!window.requestAnimationFrame)
+          window.requestAnimationFrame = function(callback, element) {
+            var currTime = new Date().getTime();
+            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+            var id = window.setTimeout(function() {callback(currTime - timeToCall);}, timeToCall);
+            lastTime = currTime + timeToCall;
+            return id;
+        }
+
+      return window.requestAnimationFrame.bind(window);
+    }());
 
     if (getAnimationFrame && window.location.toString().match(/interval/i)) {
       console.log('forcing setInterval() for game loop');
@@ -511,7 +545,7 @@ function Survivor() {
         prop: null
       },
 
-      'getAnimationFrame': getAnimationFrame
+      'getAnimationFrame': getAnimationFrame ? getAnimationFrame : null
 
     };
 
