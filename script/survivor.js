@@ -1,4 +1,4 @@
-﻿/** @license
+/** @license
  *
  * SURVIVOR: A HTML + CSS + JavaScript prototype
  * based on the Commodore 64 version of Survivor from 1983
@@ -13,7 +13,10 @@
  *
  */
 
-// Side note, 2012.02.27: holy crap, this is nowhere near pleasing the JSLINT gods yet.
+/*global window, console, document, navigator, setTimeout, setInterval, clearInterval, soundManager */
+/*jslint vars: true, regexp: true, sloppy: true, white: true, nomen: true, plusplus: true */
+
+// 4.20.12: Almost lint-free, save for "unsafe characters" used to draw map.
 
 if (typeof window.console === 'undefined') {
   // hax
@@ -128,33 +131,104 @@ var IS_MUTED = window.location.href.toString().match(/mute/i);
 function Survivor() {
 
   // internal reference
-  var game;
- 
-  var data, dom, events, objects, mapTypes;
+  var game,
+      data,
+      dom,
+      events,
+      objects,
+      mapTypes,
+      mapData,
+      isIE = navigator.userAgent.match(/msie/i),
+      oldIE = navigator.userAgent.match(/msie 6/i),
 
-  var mapData;
+      // adds debug elements to the grid, UI etc.
+      DEBUG_MODE = (window.location.toString().match(/debug/i)),
 
-  var isIE = navigator.userAgent.match(/msie/i);
-  var oldIE = navigator.userAgent.match(/msie 6/i);
+      // ?profile=1, ?profiling=1, whatever.
+      PERFORMANCE_MODE = (window.location.toString().match(/profil/i)),
 
-  // adds debug elements to the grid, UI etc.
-  var DEBUG_MODE = (window.location.toString().match(/debug/i));
+      DEFAULT_LIVES = 3,
+      DEFAULT_SMARTBOMBS = 3,
+      DEFAULT_HOME_ROW = 20,
+      DEFAULT_HOME_COL = 8,
+      DEFAULT_SPACEBALLS = 8,
 
-  // ?profile=1, ?profiling=1, whatever.
-  var PERFORMANCE_MODE = (window.location.toString().match(/profil/i));
+      spaceBallTemplate,
+      spaceBallCounter = 0,
+      audioPitchCounter = 0,
+      audioPitchCounterMax = 15,
+      audioBoomScale = [0,0,1,2,2,3,4,4,5,6,6,7,8,8,9,10],
+      lastAudioIncrement = new Date(),
+      audioIncrementThrottle = 333,
 
-  var DEFAULT_LIVES = 3;
+      /**
+      * NOTE: UTF-8 character encoding required for map parsing to work.
+      * reference: http://en.wikipedia.org/wiki/Box-drawing_characters
+      * empty space inside walls is marked by a period character - "."
+      * space inside bases, not safe to be occupied is marked by a middle dot - Georgian comma (&middot;) - "·"
+      */
 
-  var DEFAULT_SMARTBOMBS = 3;
+      MAP_FREE_SPACE_CHAR = ' ',
+      MAP_ALT_FREE_SPACE_CHAR = '_',
+      MAP_INSIDE_BASE_CHAR = '·';
 
-  var DEFAULT_HOME_ROW = 20;
-  var DEFAULT_HOME_COL = 8;
+  // var MAP_INSIDE_WALLS_CHAR = '.';
 
-  var DEFAULT_SPACEBALLS = 8;
+  mapData = [
+    '                                                                         ',
+    '                                                                         ',
+    '    000000000000000000000000000                                          ',
+    '    000000000000000000000000000                                          ',
+    '    00.......................00                                          ',
+    '    00.......................00                                          ',
+    '    00..............┏┻━┓.....00            333333333333333333            ',
+    '    00.........┏┻━━┻┛┏━┛.....00           33333333333333333333           ',
+    '    00...┏┻┓...┃·····┣.......00          33..................33          ',
+    '    00...┗┓┗┻━┻┛·····┗━┓.....00         33....................33         ',
+    '    00....┫┏━━━━┓····┏━┛.....00        33.......╔╩╗............33        ',
+    '    00....┃┃....┫····┣.......00       33........╚╗╚═╩═╩╗........33       ',
+    '    00....┫┗┓┏━━┛····┗━┓.....0033333333..........╣╔╦╗··╠.........33      ',
+    '    00....┗━┛┃·┏━┳━┳┓┏┳┛.....0033333333.........╔╝│.│╔╦╝.........33      ',
+    '    00.......┗┳┛....┗┛.......00       33........╚╦╝.╚╝..........33       ',
+    '    00.......................00        33......................33        ',
+    '    00.......................00         33....................33         ',
+    '    000000000000000000000000000          33..................33          ',
+    '    000000000000000000000000000           33333333333333333333           ',
+    '          00                               333333333333333333            ',
+    '          00                                            33               ',
+    '          00                                            33               ',
+    '          11                                            33               ',
+    '          11                                            33               ',
+    '          11                               2            222              ',
+    '          11                              222           2222             ',
+    '          11                             22.22         22..22            ',
+    '         111                            22...22       22....22           ',
+    '        11.11                          22.....22     22......22          ',
+    '       11...11                        22.......22   22........22         ',
+    '      11.....11                      22.........22222..........22        ',
+    '     11.┌┐.┌┐.11                    22..╓╨─╨╖╓╨╖.222..╓╖........22       ',
+    '    11.┌┘└┴┘└┐.11                  22...╢·╓─╜╙╖╙╖...╓╨╜╟.........22      ',
+    '   11..└┐···┌┘..11                22....╙╖╟···╙╖╙╨─╨╜╓─╜..........22     ',
+    '  11....┤···├....11111           22......╢║····╢·····╟.............22    ',
+    '  11...┌┘···└┐.....111111111111222.......║╟····║·····╙──╖...........22   ',
+    '   11..┤┌┬-┬┐├..111111111111111222.......╢╙────╜········╟............22  ',
+    '    11.└┘...└┘.11                22....╓─╜·╓╥╖·······╓──╜...........22   ',
+    '     11.......11                  22...╙╖··║.║·······╟.............22    ',
+    '      11.....11                    22...╢╓─╜.║·╓╥─╥╖·╙─╖..........22     ',
+    '       11...11                      22..╙╜...╙╥╜...╙─╥╖╟.........22      ',
+    '        11.11                        22...........222.╙╜........22       ',
+    '         111                          22.........22222.........22        ',
+    '          1                            22...2...22   22...2...22         ',
+    '                                        22.222.22     22.222.22          ',
+    '                                         222 222       222 222           ',
+    '                                          2   2         2   2            ',
+    '                                                                         ',
+    '                                                                         '
+  ];
 
-  // for transform-based window scrolling vs. traditional scrolling, transform() may be faster under Firefox
-  // (but causes some visual glitches in Webkit)
-  var is_firefox = !!(navigator.userAgent.match(/firefox/i));
+      // for transform-based window scrolling vs. traditional scrolling, transform() may be faster under Firefox
+      // (but causes some visual glitches in Webkit)
+      // is_firefox = !!(navigator.userAgent.match(/firefox/i));
 
   objects = {
 
@@ -212,6 +286,24 @@ function Survivor() {
 
   };
 
+  function getAudioPitch() {
+    return Math.floor(audioPitchCounter);
+  }
+
+  function incrementAudioPitch() {
+    // throttle audible pitch increase calls
+    var now = new Date();
+    if (now - lastAudioIncrement > audioIncrementThrottle) {
+      
+      lastAudioIncrement = now;
+      audioPitchCounter += 0.5;
+      if (audioPitchCounter >= audioPitchCounterMax) {
+        audioPitchCounter = 0;
+      }
+    }
+    return getAudioPitch();
+  }
+
   var soundSprites;
 
   soundSprites = {
@@ -253,7 +345,7 @@ function Survivor() {
 
     }
 
-  }
+  };
 
   var utils;
 
@@ -498,6 +590,57 @@ function Survivor() {
 
   }
 
+  function makeGridItem(oOptions) {
+
+    var o,
+        x, y,
+        type, subType,
+        oNode = oOptions.node;
+
+    x = oOptions.x;
+    y = oOptions.y;
+    type = oOptions.type;
+    subType = oOptions.subType;
+
+    o = dom.gridItemTemplate.cloneNode(oNode);
+
+    o.style.left = (game.data.NODE_WIDTH * x) + 'px';
+    o.style.top = (game.data.NODE_HEIGHT * y) + 'px';
+
+    o.className = type + ' ' + subType;
+
+    return o;
+
+  }
+
+  function animateSpaceBalls() {
+
+    var i, j, k, l;
+
+    for (i=0, j=objects.spaceBalls.length; i<j; i++) {
+      objects.spaceBalls[i].animate();
+    }
+
+    // also do "own" collision check
+    for (i=0, j=objects.spaceBalls.length; i<j; i++) {
+
+      for (k=0, l=objects.spaceBalls.length; k<l; k++) {
+
+        // don't compare against self...
+        if (k !== i && objects.spaceBalls[i].data.row === objects.spaceBalls[k].data.row && objects.spaceBalls[i].data.col === objects.spaceBalls[k].data.col) {
+
+          // console.log('spaceball vs. spaceball!');
+          objects.spaceBalls[i].bounce();
+          break;
+
+        }
+
+      }
+
+    }
+
+  }
+
   function GameLoop() {
 
     // the timer and main loop which drives everything
@@ -508,7 +651,7 @@ function Survivor() {
     var heartbeatCounter = 0;
     var lastExec = new Date();
 
-    var css, data, events;
+    var css, data, events, getNextFrame;
 
     css = {
 
@@ -650,11 +793,11 @@ function Survivor() {
 
       }
 
-    }
+    };
 
     function refreshAnimationCallback(time) {
 
-      var now = (time? time : new Date()),
+      var now = (time || new Date()),
           delta = now - lastExec;
 
       if (delta >= data.loopInterval) {
@@ -673,28 +816,66 @@ function Survivor() {
 
     }
 
-    function getNextFrame() {
+    getNextFrame = function() {
 
       features.getAnimationFrame(refreshAnimationCallback);
 
+    };
+
+    function stopPulse() {
+
+      if (data.pulseTimer) {
+        window.clearInterval(data.pulseTimer);
+        data.pulseTimer = null;
+      }
+
     }
 
-    function pause() {
+    function getPulseStage() {
 
-      // TODO: this.paused check?
-      if (features.audio) {
-        soundManager.mute();
-      }
-      stopTimer();
+      return data.pulseStage;
 
     }
 
-    function resume() {
+    function setPulseStage(nStage) {
 
-      if (features.audio) {
-        soundManager.unmute();
+      stopPulse();
+
+      if (!nStage) {
+        nStage = 0;
       }
-      startTimer();
+
+      data.pulseStage = nStage;
+
+      // TODO: clean up
+
+      data.pulseInterval = data.pulseIntervals['stage' + nStage];
+      data.speedMultiplier = data.speedMultipliers['stage' + nStage];
+
+      console.log('set pulse stage ' + nStage +', interval ' + data.pulseInterval);
+
+    }
+
+    function nextPulseStage() {
+
+      setPulseStage(getPulseStage()+1);
+
+    }
+
+    function startPulse() {
+
+      // check and set default, if needed
+
+      if (!data.pulseTimer && !data.pulseInterval) {
+        setPulseStage();
+      }
+
+      // re-start.
+      stopPulse();
+
+      if (!data.pulseTimer) {
+        data.pulseTimer = window.setInterval(events.pulse, data.pulseInterval);
+      }
 
     }
 
@@ -741,60 +922,22 @@ function Survivor() {
 
     }
 
-    function stopPulse() {
+    function pause() {
 
-      if (data.pulseTimer) {
-        window.clearInterval(data.pulseTimer);
-        data.pulseTimer = null;
+      // TODO: this.paused check?
+      if (features.audio) {
+        soundManager.mute();
       }
+      stopTimer();
 
     }
 
-    function startPulse() {
+    function resume() {
 
-      // check and set default, if needed
-
-      if (!data.pulseTimer && !data.pulseInterval) {
-        setPulseStage();
+      if (features.audio) {
+        soundManager.unmute();
       }
-
-      // re-start.
-      stopPulse();
-
-      if (!data.pulseTimer) {
-        data.pulseTimer = window.setInterval(events.pulse, data.pulseInterval);
-      }
-
-    }
-
-    function getPulseStage() {
-
-      return data.pulseStage;
-
-    }
-
-    function setPulseStage(nStage) {
-
-      stopPulse();
-
-      if (!nStage) {
-        nStage = 0;
-      }
-
-      data.pulseStage = nStage;
-
-      // TODO: clean up
-
-      data.pulseInterval = data.pulseIntervals['stage' + nStage];
-      data.speedMultiplier = data.speedMultipliers['stage' + nStage];
-
-      console.log('set pulse stage ' + nStage +', interval ' + data.pulseInterval);
-
-    }
-
-    function nextPulseStage() {
-
-      setPulseStage(getPulseStage()+1);
+      startTimer();
 
     }
 
@@ -920,10 +1063,6 @@ function Survivor() {
 
     var counter = 0;
 
-    function getNode() {
-      return o;
-    }
-
     function hittable() {
       // this thing can be hit (or collide with the ship), provied it is active.
       return !data.dead;
@@ -963,6 +1102,83 @@ function Survivor() {
         o.style.backgroundPosition = '';
 
         utils.css.remove(o, 'exploding');
+
+    }
+
+    function animationStart() {
+
+        // register animation sequence with controller...
+        game.objects.blockController.startAnimation(objectInterface);
+        utils.css.add(o, 'exploding');
+        applyFrame();
+
+    }
+
+    function hit() {
+
+      // explode?
+      if (!data.dead && data.power) {
+
+        data.power--;
+        objects.gameController.addPoints(data.points);
+        animationStart();
+
+      }
+
+    }
+
+    function destruct() {
+
+      // clean-up: remove from the DOM.
+      o.parentNode.removeChild(o);
+      o = null;
+
+    }
+
+    function dead() {
+
+        // after explosion sequence has finished
+        if (data.power === 0) {
+
+          data.dead = true;
+          o.style.display = 'none';
+          game.objects.statsController.record('block');
+          destruct();
+
+        }
+
+    }
+
+    function init() {
+
+      if (!o) {
+
+        o = makeGridItem({
+          x: oOptions.x,
+          y: oOptions.y,
+          type: data.type,
+          subType: data.subType
+        });
+
+      }
+
+      dom.worldFragment.appendChild(o);
+
+    }
+
+    function restore() {
+
+      // reset state and re-init
+
+      if (o) {
+        o.style.backgroundPosition = '';
+        utils.css.remove(o, 'dead');
+      }
+
+      data.dead = false;
+      data.power = defaults.power;
+
+      init();
 
     }
 
@@ -1006,83 +1222,6 @@ function Survivor() {
 
     }
 
-    function animationStart() {
-
-        // register animation sequence with controller...
-        game.objects.blockController.startAnimation(objectInterface);
-        utils.css.add(o, 'exploding');
-        applyFrame();
-
-    }
-
-    function hit() {
-
-      // explode?
-      if (!data.dead && data.power) {
-
-        data.power--;
-        objects.gameController.addPoints(data.points);
-        animationStart();
-
-      }
-
-    }
-
-    function dead() {
-
-        // after explosion sequence has finished
-        if (data.power === 0) {
-
-          data.dead = true;
-          o.style.display = 'none';
-          game.objects.statsController.record('block');
-          destruct();
-
-        }
-
-    }
-
-    function destruct() {
-
-      // clean-up: remove from the DOM.
-      o.parentNode.removeChild(o);
-      o = null;
-
-    }
-
-    function restore() {
-
-      // reset state and re-init
-
-      if (o) {
-        o.style.backgroundPosition = '';
-        utils.css.remove(o, 'dead');
-      }
-
-      data.dead = false;
-      data.power = defaults.power;
-
-      init();
-
-    }
-
-    function init() {
-
-      if (!o) {
-
-        o = makeGridItem({
-          x: oOptions.x,
-          y: oOptions.y,
-          type: data.type,
-          subType: data.subType
-        });
-
-      }
-
-      dom.worldFragment.appendChild(o);
-
-    }
-
     init();
 
     objectInterface = {
@@ -1092,160 +1231,11 @@ function Survivor() {
       hittable: hittable,
       pixelCollisionCheck: pixelCollisionCheck,
       restore: restore
-    }
+    };
 
     return objectInterface;
 
   }
-
-  function BadGuyController() {
-
-    var objects = {
-
-      badGuys: game.objects.badGuys
-
-    }
-
-    function animate() {
-
-      var items = objects.badGuys,
-          i, j;
-
-      for (i=0, j=items.length; i<j; i++) {
-        items[i].animate();
-      }
-
-    }
-
-    function collision() {
-
-      if (features.audio) {
-        // make noise.
-        incrementAudioPitch();
-        soundSprites.playBoom(audioBoomScale[getAudioPitch()]);
-      }
-
-    }
-
-    function selfCollisionCheck() {
-
-      // did one bad guy crash into another?
-
-      var items = objects.badGuys,
-          i, j, hit, thisPoint;
-
-      if (items.length) {
-
-        for (j=items.length; j--;) {
-
-          thisPoint = {
-            x: items[j].data.x,
-            y: items[j].data.y,
-            w: items[j].data.w,
-            h: items[j].data.h
-          }
-
-          for (i=items.length; i--;) {
-
-            // don't compare to self, or dead things...
-            if (i !== j && items[i].data.active && !items[i].data.exploding && items[j].data.active && !items[j].data.exploding) {
-
-              hit = game.objects.collision.check(thisPoint, {
-                x: items[i].data.x,
-                y: items[i].data.y,
-                w: items[i].data.w,
-                h: items[i].data.h
-              });
-
-              if (hit) {
-                // double-boom, all the way!
-                items[i].die();
-                items[j].die();
-              }
-
-            }
-
-          }
-
-        }
-
-        if (hit) {
-          collision();
-        }
-
-      }
-
-    }
-
-    function collisionCheck() {
-
-      // check bad guy objects for collision
-      var items = objects.badGuys,
-          i, j;
-
-      var hit;
-
-      if (items.length) {
-
-        for (i=0, j=items.length; i<j; i++) {
-          hit = items[i].collisionCheck();
-          if (hit) {
-            hit = true;
-            break;
-          }
-        }
-
-      }
-
-      // TODO: needless optimization?
-      if (!hit) {
-        selfCollisionCheck();
-      }
-
-      if (hit) {
-        collision();
-      }
-
-      return hit;
-
-    }
-
-    function createBadGuy() {
-
-      var i;
-
-      // hack: check and clean up any dead ones, first.
-      for (i=0; i<objects.badGuys.length; i++) {
-        if (objects.badGuys[i].data.dead) {
-          objects.badGuys.splice(i, 1);
-        }
-      }
-
-      objects.badGuys.push(new BadGuy());
-
-    }
-
-    function killAll() {
-
-      // the effect of a smartbomb.
-      for (var i=objects.badGuys.length; i--;) {
-        // TODO: active check?
-        objects.badGuys[i].die();
-      }
-
-    }
-
-    return {
-      animate: animate,
-      collisionCheck: collisionCheck,
-      createBadGuy: createBadGuy,
-      killAll: killAll,
-      objects: objects
-    }
-
-  }
-
-  objects.badGuyController = new BadGuyController();
 
   var badGuyTemplate = document.createElement('div');
   badGuyTemplate.innerHTML = '<div class="icon"></div>';
@@ -1255,20 +1245,16 @@ function Survivor() {
 
   function BadGuy() {
 
-    var css, data, events;
-
-    var objectInterface;
-
-    var o;
-    var oIcon;
-
-    // for centering around ship
-    var centerOffset = 12;
-
-    var counter = 0;
-    var sound;
-
-    var nodeParent = game.dom.world;
+    var o,
+        oIcon,
+        css,
+        data,
+        objectInterface,
+        // for centering around ship
+        centerOffset = 12,
+        counter = 0,
+        sound,
+        nodeParent = game.dom.world;
 
     css = {
       'bird': 'bird',
@@ -1277,7 +1263,7 @@ function Survivor() {
       'exploding': 'exploding'
     };
 
-    var data = {
+    data = {
       active: false,
       dead: false,
       visible: false,
@@ -1333,23 +1319,9 @@ function Survivor() {
 
     }
 
-    function reset() {
-
-      hide();
-
-      utils.css.remove(css.exploding);
-
-      data.active = false;
-      data.exploding = false;
-      data.explosionFrame = 0;
-
-      moveTo(0,0);
-
-    }
-
     function getRandomJitter() {
 
-      return parseInt(Math.random() * centerOffset) * Math.random() > 0.5 ? 1 : -1;
+      return parseInt(Math.random() * centerOffset, 10) * Math.random() > 0.5 ? 1 : -1;
 
     }
 
@@ -1456,13 +1428,236 @@ function Survivor() {
       return {
         deltaX: (data.x < ship.data.x - (ship.data.w/2) ? 1 : -1),
         deltaY: (data.y < ship.data.y - (ship.data.h/2) ? 1 : -1)
+      };
+
+    }
+
+    function randomizePosition() {
+
+      // warp to a random row/col. give 'er.
+      var row, col, x, y;
+
+      row = parseInt(Math.random() * game.data.world_rows, 10);
+      col = parseInt(Math.random() * game.data.world_cols, 10);
+
+      x = (col * game.data.NODE_WIDTH);
+      y = (row * game.data.NODE_HEIGHT);
+
+      data.x = x;
+      data.y = y;
+
+      moveTo(x, y);
+
+    }
+
+    function setRandomType() {
+
+      data.type = data.types[parseInt(Math.random() * data.types.length, 10)];
+
+      data.frameCount = data.frameCounts[data.type];
+
+      // append relevant CSS
+      utils.css.add(o, css[data.type]);
+
+    }
+
+    function reset() {
+
+      hide();
+
+      utils.css.remove(css.exploding);
+
+      data.active = false;
+      data.exploding = false;
+      data.explosionFrame = 0;
+
+      moveTo(0,0);
+
+    }
+
+    function startAttack() {
+
+      randomizePosition();
+
+      // play sound on loop, annoy user?
+      if (features.audio) {
+        sound = soundManager.getSoundById('badguy-loop-' + (Math.random() > 0.5 ? 1 : 0));
+        if (sound && !sound.playState) {
+          sound.play();
+        }
       }
+
+      if (!data.active) {
+        data.active = true;
+      }
+
+    }
+
+    function die() {
+
+      // explosion effect/noise
+      if (!data.dead && !data.exploding) {
+
+        objects.gameController.addPoints(data.points);
+
+        if (features.audio) {
+          incrementAudioPitch();
+          if (sound) {
+            sound.stop();
+          }
+          soundSprites.playBoom(audioBoomScale[getAudioPitch()]);
+        }
+
+        data.exploding = true;
+        utils.css.add(o, css.exploding);
+
+        // and remove from the collision map.
+        game.objects.badGuyMap.clearLocation(data.id);
+
+        game.objects.statsController.record('badGuy');
+
+      }
+
+    }
+
+    function collisionCheck() {
+
+      // did the bad guy hit its target, or turret fire, or ?
+
+      var i, j,
+          ship = game.objects.ship,
+          hit = false,
+          turretGunfire = null,
+          thisPoint,
+          fire,
+          // gunfireObject,
+          location;
+
+      if (!data.active || data.exploding || data.dead) {
+        return false;
+      }
+
+      // check ship
+      // check ship gunfire
+      // check turrent gunfire
+      // check other bad guys
+      // check spaceballs?
+
+      thisPoint = {
+        x: data.x + data.jitterX,
+        y: data.y + data.jitterY,
+        w: data.w,
+        h: data.h
+      };
+
+      // did the bad guy hit the ship?
+      hit = game.objects.ship.collisionCheck(thisPoint);
+
+      if (hit) {
+        console.log('bad guy hit the ship');
+        die();
+        ship.die();
+        return true;
+      }
+
+      // did we hit a bullet?
+      fire = game.objects.ship.objects.shipGunfire;
+
+      if (fire.length) {
+
+        for (i=0, j=fire.length; i<j; i++) {
+
+          hit = game.objects.collision.check(thisPoint, {
+            x: fire[i].data.x,
+            y: fire[i].data.y,
+            w: fire[i].data.w,
+            h: fire[i].data.h
+          });
+
+          if (hit) {
+            // we have a winner.
+            // let gunfire pass through, per original game rules.
+            // fire[i].die();
+            break;
+          }
+
+        }
+
+      }
+
+      // TODO: Make new map-based method work better.
+/*
+      gunfireObject = game.objects.shipGunfireMap.check(data.row, data.col);
+
+      if (gunfireObject && !gunfireObject.data.dead) {
+        // we have a (potential) winner.
+        // do more precise coordinate check within grid.
+        hit = game.objects.collision.check(thisPoint, {
+          x: gunfireObject.data.x,
+          y: gunfireObject.data.y,
+          w: gunfireObject.data.w,
+          h: gunfireObject.data.h
+        });
+      }
+*/
+
+      if (hit) {
+
+        console.log('bad guy hit ship gunfire');
+        die();
+
+      } else {
+
+        // did the bad guy hit turret gunfire?
+
+        // if heading down or right, base coordinates on far edges.
+        location = game.objects.collision.xyToRowCol(data.x + (data.w/2), data.y + (data.h/2));
+        // var location = game.objects.collision.xyToRowCol(data.x, data.y);
+
+        turretGunfire = game.objects.turretGunfireMap.check(location.row, location.col);
+
+        if (turretGunfire) {
+
+          // we have an object. do a collision check.
+          hit = turretGunfire.collisionCheck();
+
+          if (hit) {
+            die();
+          }
+
+        }
+
+      }
+
+      return hit;
+
+    }
+
+    function destruct() {
+
+      // remove from the dom, etc.
+      if (o) {
+        if (o.parentNode) {
+          o.parentNode.removeChild(o);
+        }
+        o = null;
+        oIcon = null;
+      }
+
+    }
+
+    function dead() {
+
+        data.exploding = false;
+        data.dead = true;
+        reset();
+        destruct();
 
     }
 
     function animate() {
 
-      var ship = game.objects.ship;
+      var deltas;
 
       // may be inactive, or died and awaiting cleanup
       if (!data.active || data.dead) {
@@ -1516,217 +1711,6 @@ function Survivor() {
 
     }
 
-    function startAttack() {
-
-      randomizePosition();
-
-      // play sound on loop, annoy user?
-      if (features.audio) {
-        sound = soundManager.getSoundById('badguy-loop-' + (Math.random() > 0.5 ? 1 : 0));
-        if (sound && !sound.playState) {
-          sound.play();
-        }
-      }
-
-      if (!data.active) {
-        data.active = true;
-      }
-
-    }
-
-    function randomizePosition() {
-
-      // warp to a random row/col. give 'er.
-      var row, col, x, y;
-
-      row = parseInt(Math.random() * game.data.world_rows, 10);
-      col = parseInt(Math.random() * game.data.world_cols, 10);
-
-      x = (col * game.data.NODE_WIDTH);
-      y = (row * game.data.NODE_HEIGHT);
-
-      data.x = x;
-      data.y = y;
-
-      moveTo(x, y);
-
-    }
-
-    function collisionCheck() {
-
-      // did the bad guy hit its target, or turret fire, or ?
-
-      var intersects, item;
-      var ship = game.objects.ship;
-      var hit = false;
-      var incrementPitch = false;
-      var audioPitch;
-      var turretGunfire = null;
-
-      var thisPoint;
-
-      if (!data.active || data.exploding || data.dead) {
-        return false;
-      }
-
-      // check ship
-      // check ship gunfire
-      // check turrent gunfire
-      // check other bad guys
-      // check spaceballs?
-
-      thisPoint = {
-        x: data.x + data.jitterX,
-        y: data.y + data.jitterY,
-        w: data.w,
-        h: data.h
-      };
-
-      // did the bad guy hit the ship?
-      hit = game.objects.ship.collisionCheck(thisPoint);
-
-      if (hit) {
-        console.log('bad guy hit the ship');
-        die();
-        ship.die();
-        return true;
-      }
-
-      // did we hit a bullet?
-      var fire = game.objects.ship.objects.shipGunfire;
-
-      var gunfireObject;
-
-      if (fire.length) {
-
-        for (i=0, j=fire.length; i<j; i++) {
-
-          hit = game.objects.collision.check(thisPoint, {
-            x: fire[i].data.x,
-            y: fire[i].data.y,
-            w: fire[i].data.w,
-            h: fire[i].data.h
-          });
-
-          if (hit) {
-            // we have a winner.
-            // let gunfire pass through, per original game rules.
-            // fire[i].die();
-            break;
-          }
-
-        }
-
-      }
-
-      // TODO: Make new map-based method work better.
-/*
-      gunfireObject = game.objects.shipGunfireMap.check(data.row, data.col);
-
-      if (gunfireObject && !gunfireObject.data.dead) {
-        // we have a (potential) winner.
-        // do more precise coordinate check within grid.
-        hit = game.objects.collision.check(thisPoint, {
-          x: gunfireObject.data.x,
-          y: gunfireObject.data.y,
-          w: gunfireObject.data.w,
-          h: gunfireObject.data.h
-        });
-      }
-*/
-
-      if (hit) {
-
-        console.log('bad guy hit ship gunfire');
-        die();
-
-      } else {
-
-        // did the bad guy hit turret gunfire?
-
-        // if heading down or right, base coordinates on far edges.
-        var location = game.objects.collision.xyToRowCol(data.x + (data.w/2), data.y + (data.h/2));
-        // var location = game.objects.collision.xyToRowCol(data.x, data.y);
-
-        turretGunfire = game.objects.turretGunfireMap.check(location.row, location.col);
-
-        if (turretGunfire) {
-
-          // we have an object. do a collision check.
-          hit = turretGunfire.collisionCheck();
-
-          if (hit) {
-            die();
-          }
-
-        }
-
-      }
-
-      return hit;
-
-    }
-
-    function setRandomType() {
-
-      data.type = data.types[parseInt(Math.random() * data.types.length)];
-
-      data.frameCount = data.frameCounts[data.type];
-
-      // append relevant CSS
-      utils.css.add(o, css[data.type]);
-
-    }
-
-    function die() {
-
-      // explosion effect/noise
-      if (!data.dead && !data.exploding) {
-
-        objects.gameController.addPoints(data.points);
-
-        if (features.audio) {
-          incrementAudioPitch();
-          if (sound) {
-            sound.stop();
-          }
-          soundSprites.playBoom(audioBoomScale[getAudioPitch()]);
-        }
-
-        data.exploding = true;
-        utils.css.add(o, css.exploding);
-
-        // and remove from the collision map.
-        game.objects.badGuyMap.clearLocation(data.id);
-
-        game.objects.statsController.record('badGuy');
-
-      }
-
-    }
-
-    function dead() {
-
-        data.exploding = false;
-        data.dead = true;
-        reset();
-        destruct();
-
-    }
-
-    function destruct() {
-
-      // remove from the dom, etc.
-      if (o) {
-        if (o.parentNode) {
-          o.parentNode.removeChild(o);
-        }
-        o = null;
-        oIcon = null;
-      }
-
-    }
-
     function init() {
 
       if (!o) {
@@ -1753,44 +1737,164 @@ function Survivor() {
       die: die,
       init: init,
       startAttack: startAttack
-    }
+    };
 
     return objectInterface;
 
   }
 
-  function animateSpaceBalls() {
+  function BadGuyController() {
 
-    var i, j;
+    var objects = {
 
-    for (i = objects.spaceBalls.length; i--;) {
-      objects.spaceBalls[i].animate();
+      badGuys: game.objects.badGuys
+
+    };
+
+    function animate() {
+
+      var items = objects.badGuys,
+          i, j;
+
+      for (i=0, j=items.length; i<j; i++) {
+        items[i].animate();
+      }
+
     }
 
-    // also do "own" collision check
-    for (i = objects.spaceBalls.length; i--;) {
+    function collision() {
 
-      for (j = objects.spaceBalls.length; j--;) {
+      if (features.audio) {
+        // make noise.
+        incrementAudioPitch();
+        soundSprites.playBoom(audioBoomScale[getAudioPitch()]);
+      }
 
-        // don't compare against self...
-        if (j !== i && objects.spaceBalls[i].data.row === objects.spaceBalls[j].data.row && objects.spaceBalls[i].data.col === objects.spaceBalls[j].data.col) {
+    }
 
-          // console.log('spaceball vs. spaceball!');
-          objects.spaceBalls[i].bounce();
-          break;
+    function selfCollisionCheck() {
 
+      // did one bad guy crash into another?
+
+      var items = objects.badGuys,
+          i, j, hit, thisPoint;
+
+      if (items.length) {
+
+        for (j=items.length-1; j>=0; j--) {
+
+          thisPoint = {
+            x: items[j].data.x,
+            y: items[j].data.y,
+            w: items[j].data.w,
+            h: items[j].data.h
+          };
+
+          for (i=items.length-1; i>=0; i--) {
+
+            // don't compare to self, or dead things...
+            if (i !== j && items[i].data.active && !items[i].data.exploding && items[j].data.active && !items[j].data.exploding) {
+
+              hit = game.objects.collision.check(thisPoint, {
+                x: items[i].data.x,
+                y: items[i].data.y,
+                w: items[i].data.w,
+                h: items[i].data.h
+              });
+
+              if (hit) {
+                // double-boom, all the way!
+                items[i].die();
+                items[j].die();
+              }
+
+            }
+
+          }
+
+        }
+
+        if (hit) {
+          collision();
         }
 
       }
 
     }
 
+    function collisionCheck() {
+
+      // check bad guy objects for collision
+      var items = objects.badGuys,
+          i, j;
+
+      var hit;
+
+      if (items.length) {
+
+        for (i=0, j=items.length; i<j; i++) {
+          hit = items[i].collisionCheck();
+          if (hit) {
+            hit = true;
+            break;
+          }
+        }
+
+      }
+
+      // TODO: needless optimization?
+      if (!hit) {
+        selfCollisionCheck();
+      }
+
+      if (hit) {
+        collision();
+      }
+
+      return hit;
+
+    }
+
+    function createBadGuy() {
+
+      var i;
+
+      // hack: check and clean up any dead ones, first.
+      for (i=0; i<objects.badGuys.length; i++) {
+        if (objects.badGuys[i].data.dead) {
+          objects.badGuys.splice(i, 1);
+        }
+      }
+
+      objects.badGuys.push(new BadGuy());
+
+    }
+
+    function killAll() {
+
+      var i, j;
+      // the effect of a smartbomb.
+      for (i=0, j=objects.badGuys.length; i<j; i++) {
+        // TODO: active check?
+        objects.badGuys[i].die();
+      }
+
+    }
+
+    return {
+      animate: animate,
+      collisionCheck: collisionCheck,
+      createBadGuy: createBadGuy,
+      killAll: killAll,
+      objects: objects
+    };
+
   }
 
-  var spaceBallTemplate = document.createElement('div');
-  spaceBallTemplate.className = 'spaceball';
+  objects.badGuyController = new BadGuyController();
 
-  var spaceBallCounter = 0;
+  spaceBallTemplate = document.createElement('div');
+  spaceBallTemplate.className = 'spaceball';
 
   function SpaceBall(oOptions) {
 
@@ -1803,13 +1907,12 @@ function Survivor() {
      * bounces off of blocks, walls and other spaceballs.
      */
 
-    var o;
+    var o,
+        data,
+        objectInterface,
+        nodeParent = game.dom.world;
 
-    var data, events;
-
-    var objectInterface;
-
-    var data = {
+    data = {
       active: false,
       visible: false,
       id: 'spaceBall' + spaceBallCounter++,
@@ -1825,16 +1928,14 @@ function Survivor() {
       col: oOptions.col
     };
 
-    var nodeParent = game.dom.world;
-
     function setDirection(noAxisFlip) {
 
       // randomly choose a direction.
 
-      var xAxis = Math.random() > 0.5;
+      var xAxis = Math.random() > 0.5,
 
-      // randomly choose +/-
-      var velocity = (game.data.NODE_WIDTH/16) * (Math.random() > 0.5 ? 1 : -1) * game.objects.gameLoop.data.GAME_SPEED;
+          // randomly choose +/-
+          velocity = (game.data.NODE_WIDTH/16) * (Math.random() > 0.5 ? 1 : -1) * game.objects.gameLoop.data.GAME_SPEED;
 
       // HACK: for now, just be stupid and reverse course.
       // current bug exists where reversing direction causes minute up/down/left/right movements, resulting in imperfect grid alignment
@@ -1934,21 +2035,6 @@ function Survivor() {
 
     }
 
-
-    function animate() {
-
-      if (data.active) {
-
-        // increase frame count, move vX + vY
-        moveBy(data.vX, data.vY);
-
-        // and do collision check?
-        collisionCheck();
-
-      }
-
-    }
-
     function bounce() {
 
       // immediately move to exact grid coordinates, so we don't get double-collision issues...
@@ -1967,24 +2053,15 @@ function Survivor() {
 
       // TODO: allow wrap-around, if objects don't exist at the other end?
 
-      var i, item, location;
+      var item,
+          location;
 
-      if (data.vX < 0 && data.x + data.vX <= 0) {
-
+      // non-standard formatting, in favour of lengthy if...else
+      if ((data.vX < 0 && data.x + data.vX <= 0)
+        || (data.vX >= 0 && data.col >= game.data.world_cols)
+        || (data.vY >= 0 && data.row >= game.data.world_rows)
+        || (data.vY < 0 && data.y + data.vY <= 0)) {
         return bounce();
-
-      } else if (data.vX >= 0 && data.col >= game.data.world_cols) {
-
-        return bounce();
-
-      } else if (data.vY >= 0 && data.row >= game.data.world_rows) {
-
-        return bounce();
-
-      } else if (data.vY < 0 && data.y + data.vY <= 0) {
-
-        return bounce();
-
       }
 
       // check next block?
@@ -2019,6 +2096,38 @@ function Survivor() {
 
     }
 
+    function setInitialPosition() {
+
+      // warp to a random, unoccupied space.
+
+      var row = data.row,
+          col = data.col,
+          x, y;
+
+      x = (col * game.data.NODE_WIDTH);
+      y = (row * game.data.NODE_HEIGHT);
+
+      data.x = x;
+      data.y = y;
+
+      moveTo(x, y);
+
+    }
+
+    function animate() {
+
+      if (data.active) {
+
+        // increase frame count, move vX + vY
+        moveBy(data.vX, data.vY);
+
+        // and do collision check?
+        collisionCheck();
+
+      }
+
+    }
+
     function startAttack() {
 
       setInitialPosition();
@@ -2039,8 +2148,8 @@ function Survivor() {
 
     function pixelCollisionCheck(oOptions) {
 
-      var hit;
-      var collision = game.objects.collision;
+      var hit,
+          collision = game.objects.collision;
 
       hit = collision.checkSprites({
          object1: oOptions,
@@ -2055,24 +2164,6 @@ function Survivor() {
       });
 
       return hit;
-
-    }
-
-    function setInitialPosition() {
-
-      // warp to a random, unoccupied space.
-
-      var row = data.row,
-          col = data.col,
-          x, y;
-
-      x = (col * game.data.NODE_WIDTH);
-      y = (row * game.data.NODE_HEIGHT);
-
-      data.x = x;
-      data.y = y;
-
-      moveTo(x, y);
 
     }
 
@@ -2131,7 +2222,7 @@ function Survivor() {
       pixelCollisionCheck: pixelCollisionCheck,
       restore: restore,
       startAttack: startAttack
-    }
+    };
 
     return objectInterface;
 
@@ -2139,9 +2230,7 @@ function Survivor() {
 
   function Screen() {
 
-    var self = this;
-
-    var data, events;
+    var data, events, refreshVisibleGrid;
 
     var lastVisibleCheck = {
       // previous screen coordinates
@@ -2149,7 +2238,7 @@ function Survivor() {
       y: null,
       screen_width: null,
       screen_height: null
-    }
+    };
 
     data = {
 
@@ -2174,7 +2263,7 @@ function Survivor() {
         range: null
       }
 
-    }
+    };
 
     events = {
 
@@ -2187,6 +2276,49 @@ function Survivor() {
         refreshVisibleGrid();
 
       }
+
+    };
+
+    refreshVisibleGrid = function() {
+
+      var coords = data.coords,
+          last = lastVisibleCheck,
+          visible;
+
+      // TODO: make sure this check works.
+      if (last.x === coords.x && last.y === coords.y && coords.screen_width === coords.width && coords.screen_height === coords.height) {
+
+        // no change since last check
+        return data.visibleGridInfo;
+
+      }
+
+      // update previous screen coordinates
+      last.x = coords.x;
+      last.y = coords.y;
+
+      coords.screen_width = coords.width;
+      coords.screen_height = coords.height;
+
+      last.screen_width = coords.width;
+      last.screen_height = coords.height;
+
+      // var visible_range = [];
+
+      visible = {
+        from: game.objects.collision.xyToRowCol(coords.x, coords.y),
+        to: game.objects.collision.xyToRowCol(coords.x + coords.width, coords.y + coords.height)
+      };
+
+      data.visibleGridInfo = {
+        from: visible.from,
+        to: visible.to
+        // range: visible_range
+      };
+
+      // console.log('refreshVisibleGrid: ' + data.visibleGridInfo.from.col + ' -> ' + data.visibleGridInfo.to.col + ', ' + data.visibleGridInfo.from.row + ' -> ' + data.visibleGridInfo.to.row + ')');
+
+      return data.visibleGridInfo;
 
     };
 
@@ -2226,9 +2358,7 @@ function Survivor() {
       // given x/y, set the mid-point of the screen there.
 
       var targetX,
-          targetY,
-          midX,
-          midY;
+          targetY;
 
       if (x < data.coords.width/2) {
         targetX = 0;
@@ -2276,65 +2406,6 @@ function Survivor() {
 
     }
 
-    function refreshVisibleGrid() {
-
-      var coords = data.coords;
-      var last = lastVisibleCheck;
-
-      // TODO: make sure this check works.
-      if (last.x === coords.x && last.y === coords.y && coords.screen_width === coords.width && coords.screen_height === coords.height) {
-
-        // no change since last check
-        return data.visibleGridInfo;
-
-      }
-
-      // update previous screen coordinates
-      last.x = coords.x;
-      last.y = coords.y;
-
-      coords.screen_width = coords.width;
-      coords.screen_height = coords.height;
-
-      last.screen_width = coords.width;
-      last.screen_height = coords.height;
-
-      var i, j, k, l,
-          rows = game.data.world_rows,
-          cols = game.data.world_cols;
-
-      var visible_range = [];
-
-      var visible = {
-        from: game.objects.collision.xyToRowCol(coords.x, coords.y),
-        to: game.objects.collision.xyToRowCol(coords.x + coords.width, coords.y + coords.height)
-      }
-
-/*
-      if (game.data.map) {
-
-        // data.map
-        for (i=visible.from.rows, j=visible.to.rows; i<j; i++) {
-          for (k=visible.from.cols, l=visible.to.cols; k<l; j++) {
-            visible_range.push(game.data.map[i][k]);
-          }
-        }
-
-      }
-*/
-
-      data.visibleGridInfo = {
-        from: visible.from,
-        to: visible.to
-        // range: visible_range
-      }
-
-//      console.log('refreshVisibleGrid: ' + data.visibleGridInfo.from.col + ' -> ' + data.visibleGridInfo.to.col + ', ' + data.visibleGridInfo.from.row + ' -> ' + data.visibleGridInfo.to.row + ')');
-
-      return data.visibleGridInfo;
-
-    }
-
     function isInView(col, row) {
 
       // is this location on-screen?
@@ -2370,7 +2441,7 @@ function Survivor() {
       moveTo: moveTo,
       refreshVisibleGrid: refreshVisibleGrid
 
-    }
+    };
 
   }
 
@@ -2394,23 +2465,24 @@ function Survivor() {
 
   function KeyboardMonitor() {
 
-    var self = this;
+    var keys,
+        events,
 
     // hash for keys being pressed
-    var downKeys = {};
+       downKeys = {},
 
-    // meaningful labels for key values
-    var keyMap = {
-      'shift': 16,
-      'ctrl': 17,
-      'space': 32,
-      'left': 37,
-      'up': 38,
-      'right': 39,
-      'down': 40
-    };
+       // meaningful labels for key values
+       keyMap = {
+         'shift': 16,
+         'ctrl': 17,
+         'space': 32,
+         'left': 37,
+         'up': 38,
+         'right': 39,
+         'down': 40
+       };
 
-    var events = {
+    events = {
 
       keydown: function(e) {
 
@@ -2440,22 +2512,24 @@ function Survivor() {
 
       }
 
-    }
+    };
 
-    var keys = {
+    keys = {
+
+      // NOTE: Each function gets an (e) event argument.
 
       // shift
       '16': {
 
         allowEvent: true, // don't use stopEvent()
 
-        down: function(e) {
+        down: function() {
 
           game.objects.ship.startFire();
 
         },
 
-        up: function(e) {
+        up: function() {
 
           game.objects.ship.endFire();
 
@@ -2468,13 +2542,13 @@ function Survivor() {
 
         allowEvent: true, // don't use stopEvent()
 
-        down: function(e) {
+        down: function() {
 
           game.objects.ship.startFire();
 
         },
 
-        up: function(e) {
+        up: function() {
 
           game.objects.ship.endFire();
 
@@ -2485,14 +2559,14 @@ function Survivor() {
       // left
       '37': {
 
-        down: function(e) {
+        down: function() {
 
           game.objects.ship.thrust(-1, 0);
 
         },
 
 
-        up: function(e) {
+        up: function() {
 
           game.objects.ship.endThrust();
 
@@ -2503,14 +2577,14 @@ function Survivor() {
       // up
       '38': {
 
-        down: function(e) {
+        down: function() {
 
           game.objects.ship.thrust(0, -1);
 
         },
 
 
-        up: function(e) {
+        up: function() {
 
           game.objects.ship.endThrust();
 
@@ -2521,14 +2595,14 @@ function Survivor() {
       // right
       '39': {
 
-        down: function(e) {
+        down: function() {
 
           game.objects.ship.thrust(1, 0);
 
         },
 
 
-        up: function(e) {
+        up: function() {
 
           game.objects.ship.endThrust();
 
@@ -2539,14 +2613,14 @@ function Survivor() {
       // down
       '40': {
 
-        down: function(e) {
+        down: function() {
 
           game.objects.ship.thrust(0, 1);
 
         },
 
 
-        up: function(e) {
+        up: function() {
 
           game.objects.ship.endThrust();
 
@@ -2557,7 +2631,7 @@ function Survivor() {
       // space bar!
       '32': {
 
-        down: function(e) {
+        down: function() {
 
           game.objects.smartbombController.fire();
 
@@ -2610,61 +2684,150 @@ function Survivor() {
       isDown: isDown,
       releaseAll: releaseAll
 
+    };
+
+  }
+
+  var bigExplosionTemplate = document.createElement('div');
+  bigExplosionTemplate.className = 'big-explosion';
+
+  function BigExplosion(oOptions) {
+
+    // a large boom.
+
+    var o;
+
+    var counter = 0;
+
+    var data = {
+
+      active: true,
+      animationModulus: oOptions.animationModulus,
+      frame: 0,
+      frameCount: 5,
+      node: oOptions.node,
+      x: oOptions.x,
+      y: oOptions.y,
+      w: 96,
+      h: 80,
+      vX: game.data.NODE_WIDTH/2 * oOptions.vX,
+      vY: game.data.NODE_HEIGHT/2 * oOptions.vY
+
+    };
+
+    function moveTo(x,y) {
+
+      if (o) {
+
+        o.style.left = Math.floor(x) + 'px';
+        o.style.top = Math.floor(y) + 'px';
+
+      }
+
     }
+
+    function moveBy(x,y) {
+
+      data.x += x;
+      data.y += y;
+
+      moveTo(data.x, data.y);
+
+    }
+
+    function applyFrame(frame) {
+
+      if (o) {
+        o.style.backgroundPosition = '0px ' + (frame * -data.h) + 'px';
+      }
+
+    }
+
+    function animate() {
+
+      if (data.active) {
+
+        counter++;
+
+        if (data.vX !== 0 || data.vY !== 0) {
+
+          moveBy(data.vX, data.vY);
+
+          //flick(e)r
+          o.style.visibility = (Math.random() > 0.25 ? 'visible' : 'hidden');
+
+        }
+
+        if (counter % data.animationModulus === 0) {
+
+          if (data.frame >= data.frameCount) {
+            data.frame = 0;
+            data.active = false;
+          }
+
+          // apply background position
+          applyFrame(data.frame);
+
+          data.frame++;
+
+        }
+
+      }
+
+      return data.active ? 0 : 1;
+
+    }
+
+    function destruct() {
+
+      if (o) {
+        o.parentNode.removeChild(o);
+        o = null;
+      }
+
+    }
+
+    function init() {
+
+      o = bigExplosionTemplate.cloneNode(true);
+
+      // set initial position
+      moveTo(data.x, data.y);
+
+      data.node.appendChild(o);
+
+    }
+
+    init();
+
+    return {
+      data: data,
+      animate: animate,
+      destruct: destruct,
+      moveBy: moveBy,
+      moveTo: moveTo
+    };
 
   }
 
   function LevelEndSequence(oOptions) {
 
     var objects = {
-      explosions: []
-    }
+        explosions: []
+      },
 
-    var data = {
-      active: false,
-      waiting: false,
-      node: oOptions.node,
-      explosionCount: 16,
-      maxRuntime: 5000,
-      screenOffset: 96
-    }
+      data = {
+        active: false,
+        waiting: false,
+        node: oOptions.node,
+        explosionCount: 16,
+        maxRuntime: 5000,
+        screenOffset: 96
+      },
 
-    var counter = 0;
+      runTime;
 
-    var runTime;
-
-    function animate() {
-
-      if (data.waiting || !data.active) {
-        return false;
-      }
-
-      var i, j,
-          isComplete,
-          position;
-
-      for (i=0, j=objects.explosions.length; i<j; i++) {
-
-        isComplete = objects.explosions[i] && objects.explosions[i].animate();
-
-        if (isComplete) {
-          // randomly delay via frame offset, reposition and recycle
-          objects.explosions[i].data.frame = -parseInt(Math.random() * 5);
-          position = getRandomPosition();
-          objects.explosions[i].moveTo(position.x, position.y);
-          objects.explosions[i].data.active = true;
-          makeNoise();
-        }
-
-      }
-
-      if (new Date() - runTime > data.maxRuntime) {
-        end();
-      }
-
-    }
-
-    function makeNoise(pan) {
+    function makeNoise() {
 
       if (features.audio) {
 
@@ -2682,16 +2845,13 @@ function Survivor() {
       return {
         x: data.screenOffset + parseInt(Math.random() * (game.objects.screen.data.coords.width - data.screenOffset), 10),
         y: data.screenOffset + parseInt(Math.random() * (game.objects.screen.data.coords.width - data.screenOffset), 10)
-      }
+      };
 
     }
 
     function createExplosion() {
 
-      var x, y,
-          position;
-
-      position = getRandomPosition();
+      var position = getRandomPosition();
 
       objects.explosions.push(new BigExplosion({
         node: data.node,
@@ -2719,8 +2879,8 @@ function Survivor() {
         createExplosion();
 
         for (i=0; i<maxObjects; i++) {
-          window.setTimeout(createExplosion, (i+1)*50)
-          window.setTimeout(createExplosion, (i+1)*50)
+          window.setTimeout(createExplosion, (i+1)*50);
+          window.setTimeout(createExplosion, (i+1)*50);
         }
 
       }
@@ -2736,6 +2896,20 @@ function Survivor() {
     function hide() {
 
       data.node.style.display = 'none';
+
+    }
+
+    function destruct() {
+
+      // clean-up?
+
+      var i, j;
+
+      for (i=0, j=objects.explosions.length; i<j; i++) {
+        objects.explosions[i].destruct();
+      }
+
+      objects.explosions = [];
 
     }
 
@@ -2796,6 +2970,37 @@ function Survivor() {
 
         game.objects.gameLoop.resume();
 
+      };
+
+    }
+
+    function animate() {
+
+      if (data.waiting || !data.active) {
+        return false;
+      }
+
+      var i, j,
+          isComplete,
+          position;
+
+      for (i=0, j=objects.explosions.length; i<j; i++) {
+
+        isComplete = objects.explosions[i] && objects.explosions[i].animate();
+
+        if (isComplete) {
+          // randomly delay via frame offset, reposition and recycle
+          objects.explosions[i].data.frame = -parseInt(Math.random() * 5, 10);
+          position = getRandomPosition();
+          objects.explosions[i].moveTo(position.x, position.y);
+          objects.explosions[i].data.active = true;
+          makeNoise();
+        }
+
+      }
+
+      if (new Date() - runTime > data.maxRuntime) {
+        end();
       }
 
     }
@@ -2809,27 +3014,11 @@ function Survivor() {
 
     }
 
-    function destruct() {
-
-      // clean-up?
-
-      var i, j;
-
-      for (i=0, j=objects.explosions.length; i<j; i++) {
-        objects.explosions[i].destruct();
-      }
-
-      objects.explosions = [];
-
-    }
-
-window.levelEndSequence = start;
-
     return {
       animate: animate,
       data: data,
       start: start
-    }
+    };
 
   }
 
@@ -2874,10 +3063,9 @@ window.levelEndSequence = start;
 
     // given a point, find nearest unoccupied neighbouring space.
 
-    var i,
+    var i, j,
         targetCol,
         targetRow,
-        freeSpace,
         direction,
         directions;
 
@@ -2906,7 +3094,7 @@ window.levelEndSequence = start;
 
     }
 
-    for (i=directions.length; i--;) {
+    for (i=0, j=directions.length; i<j; i++) {
 
       targetCol = col + directions[i][0];
       targetRow = row + directions[i][1];
@@ -2918,8 +3106,6 @@ window.levelEndSequence = start;
 
           // use this one.
           return [targetCol, targetRow];
-
-          break;
 
         }
 
@@ -2966,7 +3152,7 @@ window.levelEndSequence = start;
     return {
       check: check,
       data: data
-    }
+    };
 
   }
 
@@ -2978,7 +3164,7 @@ window.levelEndSequence = start;
      * this method is less-flexible, but should be faster (and more fun.)
      */
 
-    var i,
+    var i, j,
         data;
 
       data = [{
@@ -3671,7 +3857,7 @@ window.levelEndSequence = start;
       
     ];
 
-    for (i=data.length; i--;) {
+    for (i=0, j=data.length; i<j; i++) {
       spriteData[data[i].id] = new SpriteData(data[i]);
     }
 
@@ -3684,9 +3870,11 @@ window.levelEndSequence = start;
 
     // intersect/overlap detection
 
+/*
     var objects = {
       spriteData: spriteData
     };
+*/
 
     function xyToRowCol(x, y) {
 
@@ -3697,7 +3885,7 @@ window.levelEndSequence = start;
         col: Math.max(0, Math.min(game.data.world_cols, Math.floor(x/game.data.NODE_WIDTH))),
         row: Math.max(0, Math.min(game.data.world_rows, Math.floor(y/game.data.NODE_HEIGHT)))
 
-      }
+      };
 
       return result;
 
@@ -3705,10 +3893,8 @@ window.levelEndSequence = start;
 
     function getIntersect(x,y) {
 
-      var result,
-          location,
-          mapItem,
-          intersect;
+      var location,
+          mapItem;
 
       if (typeof x === 'undefined' || typeof y === 'undefined') {
         console.log('getIntersect(): WARN: x/y undefined');
@@ -3734,6 +3920,7 @@ window.levelEndSequence = start;
     function check(point1, point2) {
 
       // given two boxes, check for intersects.
+      var result;
 
       if (point2.x >= point1.x) {
 
@@ -3745,10 +3932,10 @@ window.levelEndSequence = start;
             // point 1 is above point 2.
             if (point1.y + point1.h >= point2.y) {
               // point 1 overlaps point 2 on y.
-              return true;
+              result = true;
             }
           } else {
-            return (point1.y < point2.y + point2.h);
+            result = (point1.y < point2.y + point2.h);
           }
         }
 
@@ -3760,17 +3947,19 @@ window.levelEndSequence = start;
           // point 2 overlaps point 1 on x.
           if (point2.y < point1.y) {
             // point 2 is above point 1.
-            return (point2.y + point2.h >= point1.y);
+            result = (point2.y + point2.h >= point1.y);
           } else {
             // point 2 is below point 1.
-            return (point1.y + point1.h >= point2.y);
+            result = (point1.y + point1.h >= point2.y);
           }
         } else {
           // no overlap?
-          return false;
+          result = false;
         }
 
       }
+
+      return result;
 
     }
 
@@ -3995,10 +4184,7 @@ window.levelEndSequence = start;
       // given a box, check either the midpoint or the four corners for intersects.
 
       var i,
-          item,
-          intersect_hash = {},
-          intersects = [],
-          result;
+          intersects = [];
 
       if (point.includeNeighbours) {
 
@@ -4029,7 +4215,7 @@ window.levelEndSequence = start;
       checkSprites: checkSprites,
       xyToRowCol: xyToRowCol
 
-    }
+    };
 
   }
 
@@ -4088,29 +4274,6 @@ window.levelEndSequence = start;
 
     }
 
-    function show() {
-
-      if (!data.visible) {
-        data.visible = true;
-        if (o) {
-          nodeParent.appendChild(o);
-          o.style.display = 'block';
-        }
-      }
-
-    }
-
-    function reset() {
-
-      hide();
-
-      data.active = false;
-      frame = 0;
-
-      moveTo(0,0);
-
-    }
-
     function moveTo(x,y) {
 
       var location;
@@ -4146,13 +4309,56 @@ window.levelEndSequence = start;
 
     }
 
+    function show() {
+
+      if (!data.visible) {
+        data.visible = true;
+        if (o) {
+          nodeParent.appendChild(o);
+          o.style.display = 'block';
+        }
+      }
+
+    }
+
+    function reset() {
+
+      hide();
+
+      data.active = false;
+      frame = 0;
+
+      moveTo(0,0);
+
+    }
+
+
+    function destruct() {
+
+      // remove from the dom, etc.
+      if (o) {
+        hide();
+        o = null;
+      }
+
+    }
+
+    function die() {
+
+      // called when end of screen hit, or object hit
+      data.dead = true;
+      reset();
+      destruct();
+
+    }
+
     function moveBy(x,y) { // TODO: labels for relative grid item values?
 
       var screen = game.objects.screen;
 
       // move and do collision check?
-      data.x += data.vX;
-      data.y += data.vY;
+      data.x += x;
+      data.y += y;
 
       if (data.x < 0 || data.x < screen.data.coords.x || data.x > screen.data.coords.x + screen.data.coords.width || data.x + data.w > game.data.world_width) {
 
@@ -4175,25 +4381,6 @@ window.levelEndSequence = start;
 
     }
 
-    function animate() {
-
-      var ship = game.objects.ship;
-
-      var visibleGrid;
-
-      // may be inactive, or died and awaiting cleanup
-      if (!data.active) {
-        return false;
-      }
-
-      // increase frame count, move vX + vY
-      moveBy(data.vX, data.vY);
-
-      // and do collision check?
-      collisionCheck();
-
-    }
-
     function fire() {
 
       if (!data.active) {
@@ -4212,14 +4399,14 @@ window.levelEndSequence = start;
 
       // did ship fire hit anything?
 
+      var i, j;
       var intersects, item;
       var hit = false;
       var incrementPitch = false;
-      var audioPitch;
       var mapObjectItem;
       var passThrough;
 
-      if (!data.dead && data.lastCollisionX !== data.x || data.lastCollisionY !== data.y) {
+      if (!data.dead && (data.lastCollisionX !== data.x || data.lastCollisionY !== data.y)) {
 
         data.lastCollisionX = data.x;
         data.lastCollisionY = data.y;
@@ -4233,7 +4420,7 @@ window.levelEndSequence = start;
           // TODO: includeNeighbours: true ?
         });
 
-        for (i=intersects.length; i--;) {
+        for (i=0, j=intersects.length; i<j; i++) {
 
           item = game.data.map[intersects[i].row][intersects[i].col];
 
@@ -4430,7 +4617,7 @@ window.levelEndSequence = start;
 
             // we have an object. do a collision check.
 
-console.log('spaceball found at ' + data.row, data.col);
+            // console.log('spaceball found at ' + data.row, data.col);
 
             // HACK: compare vs. ship object shape for collision. it's close enough.
 
@@ -4442,7 +4629,7 @@ console.log('spaceball found at ' + data.row, data.col);
               h: data.h
             });
 
-console.log('result of collision check with spaceball', hit);
+            // console.log('result of collision check with spaceball', hit);
 
             // hit = mapObjectItem.hittable();
 
@@ -4456,9 +4643,9 @@ console.log('result of collision check with spaceball', hit);
         }
 
         data.lastCollisionResult = {
-          hit: hit,
-          incrementPitch: incrementPitch
-        }
+          'hit': hit,
+          'incrementPitch': incrementPitch
+        };
 
       }
 
@@ -4466,22 +4653,18 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
-    function die() {
+    function animate() {
 
-      // called when end of screen hit, or object hit
-      data.dead = true;
-      reset();
-      destruct();
-
-    }
-
-    function destruct() {
-
-      // remove from the dom, etc.
-      if (o) {
-        hide();
-        o = null;
+      // may be inactive, or died and awaiting cleanup
+      if (!data.active) {
+        return false;
       }
+
+      // increase frame count, move vX + vY
+      moveBy(data.vX, data.vY);
+
+      // and do collision check?
+      collisionCheck();
 
     }
 
@@ -4504,137 +4687,13 @@ console.log('result of collision check with spaceball', hit);
       die: die,
       hittable: hittable,
       init: init
-    }
+    };
 
     return objectInterface;
 
   }
 
-  var bigExplosionTemplate = document.createElement('div');
-  bigExplosionTemplate.className = 'big-explosion';
-
-  function BigExplosion(oOptions) {
-
-    // a large boom.
-
-    var o;
-
-    var counter = 0;
-
-    var data = {
-
-      active: true,
-      animationModulus: oOptions.animationModulus,
-      frame: 0,
-      frameCount: 5,
-      node: oOptions.node,
-      x: oOptions.x,
-      y: oOptions.y,
-      w: 96,
-      h: 80,
-      vX: game.data.NODE_WIDTH/2 * oOptions.vX,
-      vY: game.data.NODE_HEIGHT/2 * oOptions.vY
-
-    }
-
-    function moveTo(x,y) {
-
-      if (o) {
-
-        o.style.left = Math.floor(x) + 'px';
-        o.style.top = Math.floor(y) + 'px';
-
-      }
-
-    }
-
-    function moveBy(x,y) {
-
-      data.x += x;
-      data.y += y;
-
-      moveTo(data.x, data.y);
-
-    }
-
-    function applyFrame(frame) {
-
-      if (o) {
-        o.style.backgroundPosition = '0px ' + (frame * -data.h) + 'px';
-      }
-
-    }
-
-    function animate() {
-
-      if (data.active) {
-
-        counter++;
-
-        if (data.vX !== 0 || data.vY !== 0) {
-
-          moveBy(data.vX, data.vY);
-
-          //flick(e)r
-          o.style.visibility = (Math.random() > 0.25 ? 'visible' : 'hidden');
-
-        }
-
-        if (counter % data.animationModulus === 0) {
-
-          if (data.frame >= data.frameCount) {
-            data.frame = 0;
-            data.active = false;
-          }
-
-          // apply background position
-          applyFrame(data.frame);
-
-          data.frame++;
-
-        }
-
-      }
-
-      return data.active ? 0 : 1;
-
-    }
-
-    function destruct() {
-
-      if (o) {
-        o.parentNode.removeChild(o);
-        o = null;
-      }
-
-    }
-
-    function init() {
-
-      o = bigExplosionTemplate.cloneNode(true);
-
-      // set initial position
-      moveTo(data.x, data.y);
-
-      data.node.appendChild(o);
-
-    }
-
-    init();
-
-    return {
-      data: data,
-      animate: animate,
-      destruct: destruct,
-      moveBy: moveBy,
-      moveTo: moveTo
-    }
-
-  }
-
   function Ship() {
-
-    var self = this;
 
     var o;
 
@@ -4642,7 +4701,7 @@ console.log('result of collision check with spaceball', hit);
       explode: null,
       thrustStart: null,
       thrustLoop: null
-    }
+    };
 
     var data = {
       // angle: 0,
@@ -4693,6 +4752,7 @@ console.log('result of collision check with spaceball', hit);
       hidden: 'hidden'
     };
 
+/*
     function setPosition(oOptions) {
 
       var x, y;
@@ -4707,13 +4767,102 @@ console.log('result of collision check with spaceball', hit);
       o.style.top = y + 'px';
 
     }
+*/
 
-    function stop() {
+    function hide() {
 
-      // kill movement and thrust, etc.
-      endThrust();
+      if (!data.hidden) {
+        data.hidden = true;
+        utils.css.add(o, css.hidden);
+      }
+
+    }
+
+    function show() {
+      if (data.hidden) {
+        data.hidden = false;
+        window.setTimeout(function() {
+          if (!data.hidden) {
+            utils.css.remove(o, css.hidden);
+          }
+        }, 10);
+      }
+
+    }
+
+    function reset() {
+
+      data.dead = false;
+
       data.vX = 0;
       data.vY = 0;
+
+      show();
+
+    }
+
+    function moveTo(x,y) {
+
+      var deltaX, deltaY,
+          screenW = game.objects.screen.data.coords.width,
+          screenH = game.objects.screen.data.coords.height,
+          screenX = game.objects.screen.data.coords.x,
+          screenXAbs = Math.abs(screenX),
+          screenY = game.objects.screen.data.coords.y,
+          screenYAbs = Math.abs(screenY),
+          screenWThird = screenW/3,
+          screenHThird = screenH/3;
+
+      var vX = data.vX;
+      var vY = data.vY;
+
+      x = Math.floor(x);
+      y = Math.floor(y);
+
+      deltaX = x - data.x;
+      deltaY = y - data.y;
+
+      if (data.lastX === x && data.lastY === y) {
+        return false;
+      }
+
+      data.lastX = x;
+      data.lastY = y;
+
+      data.x = x;
+      data.y = y;
+
+      o.style.left = x + 'px';
+      o.style.top = y + 'px';
+
+      // console.log(deltaX, screenXAbs, screenW, screenWThird);
+
+      // are we near the screen boundary?
+
+      if (deltaX > 0 && x > (screenXAbs + screenW - screenWThird)) {
+
+        // moving right
+
+        game.objects.screen.moveBy(vX, 0);
+
+      } else if (deltaX < 0 && x < (screenXAbs + screenWThird)) {
+
+        // moving left
+
+        game.objects.screen.moveBy(vX, 0);
+      }
+
+      if (deltaY > 0 && y > (screenYAbs + screenH - screenHThird)) {
+
+        // moving down
+
+        game.objects.screen.moveBy(0, vY);
+
+      } else if (deltaY < 0 && y < (screenYAbs + screenHThird)) {
+
+        game.objects.screen.moveBy(0, vY);
+
+      }
 
     }
 
@@ -4752,7 +4901,7 @@ console.log('result of collision check with spaceball', hit);
       if (!data.thrusting) {
 
         // initial start.
-        utils.css.add(o, css.thrusting)
+        utils.css.add(o, css.thrusting);
 
         if (features.audio) {
           audio.thrustStart.play();
@@ -4830,7 +4979,7 @@ console.log('result of collision check with spaceball', hit);
         return false;
       }
 
-      utils.css.remove(o, css.thrusting)
+      utils.css.remove(o, css.thrusting);
 
       data.thrusting = false;
 
@@ -4848,11 +4997,20 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
+    function stop() {
+
+      // kill movement and thrust, etc.
+      endThrust();
+      data.vX = 0;
+      data.vY = 0;
+
+    }
+
     function killGunFire() {
 
-      var i;
+      var i, j;
 
-      for (i = objects.shipGunfire.length; i--;) {
+      for (i=0, j=objects.shipGunfire.length; i<j; i++) {
 
         objects.shipGunfire[i].die();
 
@@ -4867,14 +5025,14 @@ console.log('result of collision check with spaceball', hit);
 
       // this array should be empty / zero when no gunfire is active, since objects self-destruct.
 
-      var i,
+      var i, j,
           items = objects.shipGunfire;
 
       if (items.length) {
 
         // console.log('animating ' + items.length + ' gunfire objects');
 
-        for (i=items.length; i--;) {
+        for (i=0, j=items.length; i<j; i++) {
           // do yo' thang.
           items[i].animate();
         }
@@ -4902,16 +5060,6 @@ console.log('result of collision check with spaceball', hit);
       data.firing = false;
 
       // note: continue animating active elements, regardless of firing state.
-
-    }
-
-    function maybeFire() {
-
-      // is the fire key being pressed? fire if so.
-
-      if (game.objects.keyboardMonitor.isDown('shift') || game.objects.keyboardMonitor.isDown('ctrl')) {
-        fire();
-      }
 
     }
 
@@ -4952,6 +5100,16 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
+    function maybeFire() {
+
+      // is the fire key being pressed? fire if so.
+
+      if (game.objects.keyboardMonitor.isDown('shift') || game.objects.keyboardMonitor.isDown('ctrl')) {
+        fire();
+      }
+
+    }
+
     function decelerate() {
 
       // simulate the effects of friction.
@@ -4981,78 +5139,124 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
-    function animate() {
+    function isAlive() {
 
-      // apply continued x/y velocities and move.
+      return (!data.dying && !data.dead);
 
-      var k = game.objects.keyboardMonitor;
+    }
 
-      var x = 0;
-      var y = 0;
+    function die() {
 
-      if (!data.dying && !data.dead) {
+      if (data.dying || data.dead) {
+        // already underway or done.
+        return false;
+      }
 
-        decelerate();
+      var i, j,
+          x = data.x,
+          y = data.y,
+          directions = [
+           [-1,-1],
+           [0,-1],
+           [1,-1],
+           [1,0],
+           [1,1],
+           [0,1],
+           [-1,1],
+           [-1,0] 
+          ];
 
-        if (k.isDown('up')) {
-          y = -1;
-        }
+      data.dying = true;
 
-        if (k.isDown('left')) {
-          x = -1;
-        }
+      if (features.audio) {
+        audio.explode.play();
+      }
 
-        if (k.isDown('right')) {
-          x = 1;
-        }
+      hide();
 
-        if (k.isDown('down')) {
-          y = 1;
-        }
+      // gunfire should die at this point, too
+      killGunFire();
 
-        // thrust if acceleration is needed
-        if (x || y) {
-          thrust(x, y);
-        }
+      // create explosion object (if needed), position here and go boom.
+      if (!objects.explosion) {
 
-        moveBy(data.vX, data.vY);
+        objects.explosion = [];
 
-        animateGunFire();
-
-        // collision checks
-
-        gridCollisionCheck();
-
-        gunfireCollisionCheck();
-
-        game.objects.badGuyController.collisionCheck();
-
-      } else if (data.dying) {
-
-        // animate explosions?
-        if (!data.dead) {
-
-          animateExplosion();
-
+        for (i=0, j=directions.length; i<j; i++) {
+          objects.explosion.push(new BigExplosion({
+            animationModulus: 6,
+            node: game.dom.world,
+            x: x,
+            y: y,
+            vX: directions[i][0],
+            vY: directions[i][1]
+          }));
         }
 
       }
-    
+
+      // next animation loop will pick up from here.
+
+    }
+
+    function findSafeRespawnLocation() {
+
+      // based on existing row/col, find nearby dead wall space (or open space) to occupy.
+
+      var freeSpace;
+
+      freeSpace = findFreeSpace(data.col, data.row);
+
+      // hack: directly assign ship row/col, so they are picked up when moveBy() is later applied.
+      game.objects.ship.data.col = freeSpace[0];
+      game.objects.ship.data.row = freeSpace[1];
+
+      // prevent ship driving
+      game.objects.keyboardMonitor.releaseAll();
+
+      // also, stop any velocity that may be applied.
+      game.objects.ship.stop();
+
+//      hide();
+
+      moveTo(game.data.NODE_WIDTH * Math.floor(game.objects.ship.data.col), game.data.NODE_HEIGHT * Math.floor(game.objects.ship.data.row));
+
+//      show();
+
+    }
+
+    function dieComplete() {
+
+      // minus one man. next screen, game over, etc.?
+
+      var isGameOver;
+
+      isGameOver = game.objects.gameController.shipDied();
+
+      if (!isGameOver) {
+
+        window.setTimeout(function() {
+          findSafeRespawnLocation();
+          reset();
+        }, 500);
+
+      }
+
     }
 
     function animateExplosion() {
 
-      var i;
+      var i, j;
       var inactive = 0;
 
-      for (i = objects.explosion.length; i--;) {
+      for (i=0, j=objects.explosion.length; i<j; i++) {
         inactive += objects.explosion[i].animate();
       }
 
       if (inactive >= objects.explosion.length) {
 
         // all objects have finished animating.
-        for (i = objects.explosion.length; i--;) {
+        for (i=0, j=objects.explosion.length; i<j; i++) {
           objects.explosion[i].destruct();
         }
 
@@ -5086,14 +5290,14 @@ console.log('result of collision check with spaceball', hit);
     function gunfireCollisionCheck() {
 
       // check ship fire for collision
-      var items = objects.shipGunfire,
-          i, j;
-
-      var result;
-      var results = [];
-      var hit = false;
-      var incrementPitch = false;
-      var toRemove = [];
+      var i, j,
+          items = objects.shipGunfire,
+          result,
+          results = [],
+          hit = false,
+          incrementPitch = false,
+          audioPitch,
+          toRemove = [];
 
       if (items.length) {
 
@@ -5101,16 +5305,20 @@ console.log('result of collision check with spaceball', hit);
 
           result = objects.shipGunfire[i].collisionCheck();
 
-          // if there was a hit, allow pitch to increase.
-          if (result.incrementPitch) {
-            incrementPitch = true;
-          }
+          if (result) {
 
-          if (result.hit) {
-            hit = true;
-          }
+            // if there was a hit, allow pitch to increase.
+            if (result.incrementPitch) {
+              incrementPitch = true;
+            }
 
-          results.push(result);
+            if (result.hit) {
+              hit = true;
+            }
+
+            results.push(result);
+
+          }
 
           // is this now dead (or killed elsewhere, ie., hitting a bad guy), and needing clean-up?
           if (objects.shipGunfire[i].data.dead) {
@@ -5141,12 +5349,12 @@ console.log('result of collision check with spaceball', hit);
 
       // remove dead items from the array
       if (toRemove.length) {
-        for (i = toRemove.length; i--;) {
+        for (i=toRemove.length-1; i>=0; i--) {
           objects.shipGunfire.splice(toRemove[i], 1);
         }
       }
 
-   }
+    }
 
     function gridCollisionCheck() {
 
@@ -5154,14 +5362,11 @@ console.log('result of collision check with spaceball', hit);
        * compares ship coords to grid, looks for collisions.
        */
 
-      var i,
+      var i, j,
           intersects,
           item,
           hit,
-          mapObjectItem,
-          location,
-          nextX,
-          nextY;
+          mapObjectItem;
 
       if (data.x !== data.lastCollisionX || data.y !== data.lastCollisionY) {
 
@@ -5177,7 +5382,7 @@ console.log('result of collision check with spaceball', hit);
           includeNeighbours: true
         });
 
-        for (i=intersects.length; i--;) {
+        for (i=0, j=intersects.length; i<j; i++) {
 
           item = game.data.map[intersects[i].row][intersects[i].col];
 
@@ -5305,7 +5510,7 @@ console.log('result of collision check with spaceball', hit);
 
         if (intersects && intersects.length) {
 
-          for (i=intersects.length; i--;) {
+          for (i=0, j=intersects.length; i<j; i++) {
 
             // whether moving or not - did we hit turret gunfire?
 
@@ -5411,202 +5616,63 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
-    function moveTo(x,y) {
+    function animate() {
 
-      var deltaX, deltaY,
-          screenW = game.objects.screen.data.coords.width,
-          screenH = game.objects.screen.data.coords.height,
-          screenX = game.objects.screen.data.coords.x,
-          screenXAbs = Math.abs(screenX),
-          screenY = game.objects.screen.data.coords.y,
-          screenYAbs = Math.abs(screenY),
-          screenWMid = screenW/2,
-          screenHMid = screenH/2,
-          screenWThird = screenW/3,
-          screenWQuarter = screenW/4,
-          screenWFifteen = screenW*0.15,
-          screenHThird = screenH/3;
+      // apply continued x/y velocities and move.
 
-      var vX = data.vX;
-      var vY = data.vY;
+      var k = game.objects.keyboardMonitor;
 
-      x = Math.floor(x);
-      y = Math.floor(y);
+      var x = 0;
+      var y = 0;
 
-      deltaX = x - data.x;
-      deltaY = y - data.y;
+      if (!data.dying && !data.dead) {
 
-      if (data.lastX === x && data.lastY === y) {
-        return false;
-      }
+        decelerate();
 
-      data.lastX = x;
-      data.lastY = y;
+        if (k.isDown('up')) {
+          y = -1;
+        }
 
-      data.x = x;
-      data.y = y;
+        if (k.isDown('left')) {
+          x = -1;
+        }
 
-      o.style.left = x + 'px';
-      o.style.top = y + 'px';
+        if (k.isDown('right')) {
+          x = 1;
+        }
 
-      // console.log(deltaX, screenXAbs, screenW, screenWThird);
+        if (k.isDown('down')) {
+          y = 1;
+        }
 
-      // are we near the screen boundary?
+        // thrust if acceleration is needed
+        if (x || y) {
+          thrust(x, y);
+        }
 
-      if (deltaX > 0 && x > (screenXAbs + screenW - screenWThird)) {
+        moveBy(data.vX, data.vY);
 
-        // moving right
+        animateGunFire();
 
-        game.objects.screen.moveBy(vX, 0);
+        // collision checks
 
-      } else if (deltaX < 0 && x < (screenXAbs + screenWThird)) {
+        gridCollisionCheck();
 
-        // moving left
+        gunfireCollisionCheck();
 
-        game.objects.screen.moveBy(vX, 0);
-      }
+        game.objects.badGuyController.collisionCheck();
 
-      if (deltaY > 0 && y > (screenYAbs + screenH - screenHThird)) {
+      } else if (data.dying) {
 
-        // moving down
+        // animate explosions?
+        if (!data.dead) {
 
-        game.objects.screen.moveBy(0, vY);
+          animateExplosion();
 
-      } else if (deltaY < 0 && y < (screenYAbs + screenHThird)) {
-
-        game.objects.screen.moveBy(0, vY);
-
-      }
-
-    }
-
-    function hide() {
-
-      if (!data.hidden) {
-        data.hidden = true;
-        utils.css.add(o, css.hidden);
-      }
-
-    }
-
-    function show() {
-      if (data.hidden) {
-        data.hidden = false;
-        window.setTimeout(function() {
-          if (!data.hidden) {
-            utils.css.remove(o, css.hidden);
-          }
-        }, 10);
-      }
-
-    }
-
-    function isAlive() {
-
-      return (!data.dying && !data.dead);
-
-    }
-
-    function die() {
-
-      if (data.dying || data.dead) {
-        // already underway or done.
-        return false;
-      }
-
-      var i, j,
-          x = data.x,
-          y = data.y,
-          directions = [
-           [-1,-1],
-           [0,-1],
-           [1,-1],
-           [1,0],
-           [1,1],
-           [0,1],
-           [-1,1],
-           [-1,0] 
-          ];
-
-      data.dying = true;
-
-      if (features.audio) {
-        audio.explode.play();
-      }
-
-      hide();
-
-      // gunfire should die at this point, too
-      killGunFire();
-
-      // create explosion object (if needed), position here and go boom.
-      if (!objects.explosion) {
-
-        objects.explosion = [];
-
-        for (i=0, j=directions.length; i<j; i++) {
-          objects.explosion.push(new BigExplosion({
-            animationModulus: 6,
-            node: game.dom.world,
-            x: x,
-            y: y,
-            vX: directions[i][0],
-            vY: directions[i][1]
-          }));
         }
 
       }
-
-      // next animation loop will pick up from here.
-      
-    }
-
-    function dieComplete() {
-
-      // minus one man. next screen, game over, etc.?
-
-      var isGameOver;
-
-      isGameOver = game.objects.gameController.shipDied();
-
-      if (!isGameOver) {
-
-        window.setTimeout(function() {
-          findSafeRespawnLocation();
-          reset();
-        }, 500);
-
-      }
-
-    }
-
-    function findSafeRespawnLocation() {
-
-      // based on existing row/col, find nearby dead wall space (or open space) to occupy.
-
-      var col = Math.ceil(data.col),
-          row = Math.ceil(data.row),
-          freeSpace,
-          object;
-
-      freeSpace = findFreeSpace(data.col, data.row);
-
-      // hack: directly assign ship row/col, so they are picked up when moveBy() is later applied.
-      game.objects.ship.data.col = freeSpace[0];
-      game.objects.ship.data.row = freeSpace[1];
-
-      // prevent ship driving
-      game.objects.keyboardMonitor.releaseAll();
-
-      // also, stop any velocity that may be applied.
-      game.objects.ship.stop();
-
-//      hide();
-
-      moveTo(game.data.NODE_WIDTH * Math.floor(game.objects.ship.data.col), game.data.NODE_HEIGHT * Math.floor(game.objects.ship.data.row));
-
-//      show();
-
+    
     }
 
     function setDefaultPosition() {
@@ -5638,17 +5704,6 @@ console.log('result of collision check with spaceball', hit);
       moveTo(x,y);
 
       game.objects.screen.centerAtPoint(x, y);
-
-    }
-
-    function reset() {
-
-      data.dead = false;
-
-      data.vX = 0;
-      data.vY = 0;
-
-      show();
 
     }
 
@@ -5725,7 +5780,7 @@ console.log('result of collision check with spaceball', hit);
       setDefaultPosition: setDefaultPosition,
       findSafeRespawnLocation: findSafeRespawnLocation
 
-    }
+    };
 
   }
 
@@ -5743,7 +5798,7 @@ console.log('result of collision check with spaceball', hit);
     var css = {
       exploding: 'exploding',
       exploded: 'exploded'
-    }
+    };
 
     var data = {
       col: oOptions.col,
@@ -5759,6 +5814,17 @@ console.log('result of collision check with spaceball', hit);
       explosionFrame: 0,
       explosionFrames: 6
     };
+
+    function destruct() {
+
+      if (o) {
+
+        o.parentNode.removeChild(o);
+        o = null;
+
+      }
+
+    }
 
     function explode() {
 
@@ -5803,9 +5869,11 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
+/*
     function getNode() {
       return o;
     }
+*/
 
     function pixelCollisionCheck(oOptions) {
 
@@ -5842,27 +5910,6 @@ console.log('result of collision check with spaceball', hit);
       return !data.exploded;
     }
 
-    function restore() {
-
-      if (data.exploded) {
-        data.exploded = false;
-      }
-
-      init();
-
-    }
-
-    function destruct() {
-
-      if (o) {
-
-        o.parentNode.removeChild(o);
-        o = null;
-
-      }
-
-    }
-
     function init() {
 
       if (!o) {
@@ -5880,6 +5927,16 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
+    function restore() {
+
+      if (data.exploded) {
+        data.exploded = false;
+      }
+
+      init();
+
+    }
+
     init();
 
     return {
@@ -5892,7 +5949,7 @@ console.log('result of collision check with spaceball', hit);
       hittable: hittable,
       pixelCollisionCheck: pixelCollisionCheck,
       restore: restore
-    }
+    };
 
   }
 
@@ -5916,6 +5973,22 @@ console.log('result of collision check with spaceball', hit);
       col = Math.floor(col);
 
       return typeof map[row] !== 'undefined' && typeof map[row][col] !== 'undefined' ? map[row][col] : null;
+
+    }
+
+    function clearLocation(id) {
+
+      // given an object ID, remove its registered location in the map.
+
+      var previous;
+
+      if (typeof lastLocation[id] !== 'undefined') {
+        previous = lastLocation[id];
+        if (map[previous.row] && map[previous.row][previous.col]) {
+          map[previous.row][previous.col] = null;
+        }
+        delete lastLocation[id];
+      }
 
     }
 
@@ -5954,32 +6027,9 @@ console.log('result of collision check with spaceball', hit);
       lastLocation[id] = {
         row: row,
         col: col
-      }
+      };
 
     }
-
-    function clearLocation(id) {
-
-      // given an object ID, remove its registered location in the map.
-
-      var previous;
-
-      if (typeof lastLocation[id] !== 'undefined') {
-        previous = lastLocation[id];
-        if (map[previous.row] && map[previous.row][previous.col]) {
-          map[previous.row][previous.col] = null;
-        }
-        delete lastLocation[id];
-      }
-
-    }
-
-    function reset() {
-
-      // just re-init empty array
-      init();
-
-    }    
 
     function init() {
 
@@ -5993,6 +6043,13 @@ console.log('result of collision check with spaceball', hit);
       }
 
       // console.log('ObjectMap.init(): made map of ' + map.length + ' x ' + map[0].length);
+
+    }
+
+    function reset() {
+
+      // just re-init empty array
+      init();
 
     }
 
@@ -6016,7 +6073,7 @@ console.log('result of collision check with spaceball', hit);
     down: null,
     left: null,
     right: null
-  }
+  };
 
   var turretGunfireCounter = 0;
 
@@ -6024,20 +6081,19 @@ console.log('result of collision check with spaceball', hit);
 
     // append to turret container element, relative to it.
 
-    var objectInterface;
+    var o,
+        data,
+        objectInterface,
+        directionsMap = {
+          'left': 'horizontal',
+          'right': 'horizontal',
+          'up': 'vertical',
+          'down': 'vertical'
+        },
+        frame = 0,
+        nodeParent = game.dom.world;
 
-    var directionsMap = {
-      'left': 'horizontal',
-      'right': 'horizontal',
-      'up': 'vertical',
-      'down': 'vertical'
-    };
-
-    var o;
-
-    var nodeParent = game.dom.world;
-
-    var data = {
+    data = {
       // note use of worldFragment vs. parent (turret) node, testing performance
       active: false,
       dead: false,
@@ -6068,8 +6124,6 @@ console.log('result of collision check with spaceball', hit);
       lastCollisionResult: null
     };
 
-    var frame = 0;
-
     function hide() {
 
       if (data.visible) {
@@ -6091,20 +6145,6 @@ console.log('result of collision check with spaceball', hit);
           o.style.display = 'block';
         }
       }
-
-    }
-
-    function reset() {
-
-      hide();
-
-      data.active = false;
-      frame = 0;
-
-      data.x = 0;
-      data.y = 0;
-
-      moveTo(data.x, data.y);
 
     }
 
@@ -6159,37 +6199,27 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
-    function moveBy(x,y) { // TODO: labels for relative grid item values?
+    function moveBy(x, y) { // TODO: labels for relative grid item values?
 
       // move and do collision check?
-      data.x += (data.vX * game.objects.gameLoop.data.speedMultiplier * game.objects.gameLoop.data.GAME_SPEED);
-      data.y += (data.vY * game.objects.gameLoop.data.speedMultiplier * game.objects.gameLoop.data.GAME_SPEED);
+      data.x += (x * game.objects.gameLoop.data.speedMultiplier * game.objects.gameLoop.data.GAME_SPEED);
+      data.y += (y * game.objects.gameLoop.data.speedMultiplier * game.objects.gameLoop.data.GAME_SPEED);
 
       moveTo(data.x, data.y);
 
     }
 
-    function animate() {
+    function reset() {
 
-      var screen = game.objects.screen;
+      hide();
 
-      var visibleGrid;
+      data.active = false;
+      frame = 0;
 
-      // may be inactive, or died and awaiting cleanup
-      if (!data.active) {
-        return false;
-      }
+      data.x = 0;
+      data.y = 0;
 
-      show();
-
-      // increase frame count, move vX + vY
-      moveBy(data.vX, data.vY);
-
-      // and do collision check?
-      collisionCheck();
-
-      // should this shot "expire"?
-      expireCheck();
+      moveTo(data.x, data.y);
 
     }
 
@@ -6212,6 +6242,39 @@ console.log('result of collision check with spaceball', hit);
       if (shouldExpire) {
         reset();
       }
+
+    }
+
+    function findDestinationBlock() {
+
+      // based on start x/y and direction, figure out where the shot should end (before hitting a block.)
+      // reference: data.endRow, data.endCol
+
+      if (data.endCol !== null || data.endRow !== null) {
+        // this has already been done.
+        return false;
+      }
+
+      var col = data.col,
+          row = data.row;
+
+      do {
+        // find the next occupied grid item.
+        col += data.xDirection;
+        row += data.yDirection;
+      } while (game.data.map[row][col] === null && col && row && col < game.data.world_cols && row < game.data.world_rows);
+
+      // if heading down or right, subtract one to prevent target overlap.
+      if (data.xDirection === 1) {
+        col--;
+      } else if (data.yDirection === 1) {
+        row--;
+      }
+
+      // console.log('direction x/y, ' + data.xDirection + ', ' + data.yDirection + ', start / end: ', data.col + ', ' + data.row + ', end: ' + col + ', ' + row);
+
+      data.endRow = row;
+      data.endCol = col;
 
     }
 
@@ -6253,44 +6316,23 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
-    function findDestinationBlock() {
+    function animate() {
 
-      // based on start x/y and direction, figure out where the shot should end (before hitting a block.)
-      // reference: data.endRow, data.endCol
-
-      if (data.endCol !== null || data.endRow !== null) {
-        // this has already been done.
+      // may be inactive, or died and awaiting cleanup
+      if (!data.active) {
         return false;
       }
 
-      var col = data.col,
-          row = data.row;
+      show();
 
-      do {
-        // find the next occupied grid item.
-        col += data.xDirection;
-        row += data.yDirection;
-      } while (game.data.map[row][col] === null && col && row && col < game.data.world_cols && row < game.data.world_rows);
+      // increase frame count, move vX + vY
+      moveBy(data.vX, data.vY);
 
-      // if heading down or right, subtract one to prevent target overlap.
-      if (data.xDirection === 1) {
-        col--;
-      } else if (data.yDirection === 1) {
-        row--;
-      }
+      // and do collision check?
+      collisionCheck();
 
-      // console.log('direction x/y, ' + data.xDirection + ', ' + data.yDirection + ', start / end: ', data.col + ', ' + data.row + ', end: ' + col + ', ' + row);
-
-      data.endRow = row;
-      data.endCol = col;
-
-    }
-
-    function restore() {
-
-      data.dead = false;
-
-      init();
+      // should this shot "expire"?
+      expireCheck();
 
     }
 
@@ -6301,6 +6343,7 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
+/*
     function destruct() {
       // remove from the dom, etc.
       if (o) {
@@ -6308,6 +6351,7 @@ console.log('result of collision check with spaceball', hit);
         o = null;
       }
     }
+*/
 
     function init() {
 
@@ -6334,6 +6378,14 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
+    function restore() {
+
+      data.dead = false;
+
+      init();
+
+    }
+
     // hack/convenience: start right away?
     init();
 
@@ -6349,7 +6401,7 @@ console.log('result of collision check with spaceball', hit);
       pixelCollisionCheck: pixelCollisionCheck,
       reset: reset,
       restore: restore
-    }
+    };
 
     return objectInterface;
 
@@ -6370,7 +6422,7 @@ console.log('result of collision check with spaceball', hit);
       exploding: 'exploding',
       exploded: 'exploded',
       dead: 'dead'
-    }
+    };
 
     var objects = {
       turretGunfire: null
@@ -6418,51 +6470,13 @@ console.log('result of collision check with spaceball', hit);
       explosionFrames: 6
     };
 
+/*
     function getNode() {
       return o;
     }
+*/
 
     // events.gameLoop?
-
-    function animate() {
-
-      // called from main game loop
-      // fire and animate
-
-      if (objects.turretGunfire) {
-        objects.turretGunfire.animate();
-      }
-
-      if (data.exploding) {
-
-        frameCount++;
-
-//        if (frameCount % 2 === 0) {
-
-          // individual turret + base destruction animation
-
-          o.style.backgroundPosition = '0px ' + (-32 * data.explosionFrame) + 'px';
-
-          data.explosionFrame++;
-
-          if (data.explosionFrame >= data.explosionFrames) {
-
-            data.explosionFrame = 0;
-
-            if (!data.baseExploding) {
-
-              // end the animation.
-              explodeComplete();
-
-            }
-
-          }
-
-//        }
-
-      }
-
-    }
 
     function maybeFire() {
 
@@ -6526,10 +6540,17 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
-    function hit() {
+    function explode(isBaseExplosion) {
 
-      // boom.
-      die();
+      if (isBaseExplosion) {
+        data.baseExploding = true;
+      }
+
+      if (data.dead && !data.exploded && !data.exploding) {
+        data.exploding = true;
+        utils.css.remove(o, css.dead); // hack to allow bgposition to work again
+        utils.css.add(o, css.exploding);
+      }
 
     }
 
@@ -6575,16 +6596,33 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
-    function explode(isBaseExplosion) {
+    function hit() {
 
-      if (isBaseExplosion) {
-        data.baseExploding = true;
+      // boom.
+      die();
+
+    }
+
+    function stopGunfire() {
+
+      if (objects.turretGunfire) {
+        objects.turretGunfire.die();
       }
 
-      if (data.dead && !data.exploded && !data.exploding) {
-        data.exploding = true;
-        utils.css.remove(o, css.dead); // hack to allow bgposition to work again
-        utils.css.add(o, css.exploding);
+    }
+
+    function hittable() {
+      // considered hittable until exploded.
+      return !data.exploded;
+    }
+
+    function destruct() {
+
+      if (o) {
+
+        o.parentNode.removeChild(o);
+        o = null;
+
       }
 
     }
@@ -6610,27 +6648,69 @@ console.log('result of collision check with spaceball', hit);
           utils.css.add(o, css.exploded);
           destruct();
 
-        } else {
-
-          // only the turret is dead.
-
-        }
+        } // else, only the turret is dead.
 
       }
 
     }
 
-    function stopGunfire() {
+    function animate() {
+
+      // called from main game loop
+      // fire and animate
 
       if (objects.turretGunfire) {
-        objects.turretGunfire.die();
+        objects.turretGunfire.animate();
+      }
+
+      if (data.exploding) {
+
+        frameCount++;
+
+//        if (frameCount % 2 === 0) {
+
+          // individual turret + base destruction animation
+
+          o.style.backgroundPosition = '0px ' + (-32 * data.explosionFrame) + 'px';
+
+          data.explosionFrame++;
+
+          if (data.explosionFrame >= data.explosionFrames) {
+
+            data.explosionFrame = 0;
+
+            if (!data.baseExploding) {
+
+              // end the animation.
+              explodeComplete();
+
+            }
+
+          }
+
+//        }
+
       }
 
     }
 
-    function hittable() {
-      // considered hittable until exploded.
-      return !data.exploded;
+    function init() {
+
+      if (!o) {
+
+        o = makeGridItem({
+          x: data.col,
+          y: data.row,
+          type: data.type,
+          subType: data.subType
+        });
+
+      }
+
+      createTurretGunfire();
+
+      dom.worldFragment.appendChild(o);
+
     }
 
     function restore() {
@@ -6664,36 +6744,6 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
-    function destruct() {
-
-      if (o) {
-
-        o.parentNode.removeChild(o);
-        o = null;
-
-      }
-
-    }
-
-    function init() {
-
-      if (!o) {
-
-        o = makeGridItem({
-          x: data.col,
-          y: data.row,
-          type: data.type,
-          subType: data.subType
-        });
-
-      }
-
-      createTurretGunfire();
-
-      dom.worldFragment.appendChild(o);
-
-    }
-
     init();
 
     return {
@@ -6709,7 +6759,7 @@ console.log('result of collision check with spaceball', hit);
       objects: objects,
       pixelCollisionCheck: pixelCollisionCheck,
       restore: restore
-    }
+    };
 
   }
 
@@ -6732,8 +6782,9 @@ console.log('result of collision check with spaceball', hit);
       frame: 0,
       dying: false,
       points: 10000
-    }
+    };
 
+/*
     var css = {
 
       wall: {
@@ -6752,18 +6803,18 @@ console.log('result of collision check with spaceball', hit);
         right: 'turret-right'
       }
 
-    }
-
+    };
+*/
     var typeToConstructor = {
       'wall': BaseWall,
       'turret': Turret
-    }
+    };
 
     var typeToArray = {
       // for storing in objects array
       'wall': objects.walls,
       'turret': objects.turrets
-    }
+    };
 
     function addItem(oOptions) {
 
@@ -6784,68 +6835,24 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
-    function animate() {
-
-      var i;
-
-      if (!data.active || (data.dead && !data.dying)) {
-        // nothing to do.
-        return false;
-      }
-
-      // animate turret gunfire, OR explosion / death sequence?
-
-      if (!data.dying) {
-
-        // reset...
-        data.deadTurretCount = 0;
-
-        for (i=objects.turrets.length; i--;) {
-          objects.turrets[i].animate();
-          data.deadTurretCount += objects.turrets[i].data.dead;
-        }
-
-        dieCheck();
-
-      } else {
-
-        // base dying/explosion sequence
-
-        for (i=objects.turrets.length; i--;) {
-          objects.turrets[i].animate();
-        }
-
-        for (i=objects.walls.length; i--;) {
-          objects.walls[i].animate();
-        }
-
-        // flash screen colors, too, once explosion is active (hack)
-
-        if (objects.walls[0].data.exploding) {
-
-          game.dom.world.style.backgroundColor = (data.frame % 2 === 0 ? '#660000' : 'transparent');
-          data.frame++;
-
-        }
-
-      }
-
-    }
-
     function pulse() {
+
+      var i, j;
 
       if (!data.active || data.dying || data.dead) {
         return false;
       }
 
       // maybe fire
-      for (i=objects.turrets.length; i--;) {
+      for (i=0, j=objects.turrets.length; i<j; i++) {
         objects.turrets[i].maybeFire();
       }
 
     }
 
     function dieComplete() {
+
+        var i, j;
 
         if (data.dead) {
           return false;
@@ -6855,11 +6862,11 @@ console.log('result of collision check with spaceball', hit);
         data.dead = true;
         data.frame = 0;
 
-        for (i=objects.turrets.length; i--;) {
+        for (i=0, j=objects.turrets.length; i<j; i++) {
           objects.turrets[i].explodeComplete();
         }
 
-        for (i=objects.walls.length; i--;) {
+        for (i=0, j=objects.walls.length; i<j; i++) {
           objects.walls[i].explodeComplete();
         }
 
@@ -6874,13 +6881,13 @@ console.log('result of collision check with spaceball', hit);
     function dieExplosion() {
 
       // mark all elements as dying, begin exploding animation
-      var i;
+      var i, j;
 
-      for (i=objects.turrets.length; i--;) {
+      for (i=0, j=objects.turrets.length; i<j; i++) {
         objects.turrets[i].explode(true);
       }
 
-      for (i=objects.walls.length; i--;) {
+      for (i=0, j=objects.walls.length; i<j; i++) {
         objects.walls[i].explode();
       }
 
@@ -6942,6 +6949,54 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
+    function animate() {
+
+      var i, j;
+
+      if (!data.active || (data.dead && !data.dying)) {
+        // nothing to do.
+        return false;
+      }
+
+      // animate turret gunfire, OR explosion / death sequence?
+
+      if (!data.dying) {
+
+        // reset...
+        data.deadTurretCount = 0;
+
+        for (i=0, j=objects.turrets.length; i<j; i++) {
+          objects.turrets[i].animate();
+          data.deadTurretCount += objects.turrets[i].data.dead;
+        }
+
+        dieCheck();
+
+      } else {
+
+        // base dying/explosion sequence
+
+        for (i=0, j=objects.turrets.length; i<j; i++) {
+          objects.turrets[i].animate();
+        }
+
+        for (i=0, j=objects.walls.length; i<j; i++) {
+          objects.walls[i].animate();
+        }
+
+        // flash screen colors, too, once explosion is active (hack)
+
+        if (objects.walls[0].data.exploding) {
+
+          game.dom.world.style.backgroundColor = (data.frame % 2 === 0 ? '#660000' : 'transparent');
+          data.frame++;
+
+        }
+
+      }
+
+    }
+
     return {
       animate: animate,
       addItem: addItem,
@@ -6949,11 +7004,9 @@ console.log('result of collision check with spaceball', hit);
       objects: objects,
       pulse: pulse,
       reset: reset
-    }
+    };
 
   }
-
-  var baseController;
 
   function BaseController() {
 
@@ -7038,17 +7091,17 @@ console.log('result of collision check with spaceball', hit);
       '╥': ['type-4', 'turret', 'down'],
       '╢': ['type-4', 'turret', 'left']
 
-    }
+    };
 
     var objects = {
       bases: [],
       basesHash: {}
-    }
+    };
 
     var data = {
       activeBaseCount: 0,
       deadBaseCount: 0
-    }
+    };
 
     // events.loop? animate()?
     var events = {
@@ -7101,7 +7154,7 @@ console.log('result of collision check with spaceball', hit);
 
       }
 
-    }
+    };
 
     function createBase(type) {
 
@@ -7124,11 +7177,9 @@ console.log('result of collision check with spaceball', hit);
     function addBaseItem(char, col, row) {
 
       // given a map character, create and add a wall or turret on the proper base object.
-      var baseObject;
-
-      var itemData;
-      var baseType;
-      var baseItemObject;
+      var itemData,
+          baseType,
+          baseItemObject;
 
       // sanity check
       if (typeof baseItemMap[char] === 'undefined') {
@@ -7165,11 +7216,11 @@ console.log('result of collision check with spaceball', hit);
     function findActiveBases() {
 
       // after parsing map, find out which bases are actually "in use."
-      var i;
+      var i, j;
 
       data.activeBaseCount = 0;
 
-      for (i=objects.bases.length; i--;) {
+      for (i=0, j=objects.bases.length; i<j; i++) {
         if (objects.bases[i].data.active) {
           data.activeBaseCount++;
         }
@@ -7179,12 +7230,12 @@ console.log('result of collision check with spaceball', hit);
 
     function reset() {
 
-      var i;
+      var i, j;
 
       // revert all bases, etc.
       data.deadBaseCount = 0;
 
-      for (i=objects.bases.length; i--;) {
+      for (i=0, j=objects.bases.length; i<j; i++) {
         objects.bases[i].reset();
       }
 
@@ -7204,7 +7255,7 @@ console.log('result of collision check with spaceball', hit);
       init: init,
       objects: objects,
       reset: reset
-    }
+    };
 
   }
 
@@ -7216,20 +7267,20 @@ console.log('result of collision check with spaceball', hit);
 
     var events = {
 
-      focus: function(e) {
+      focus: function() {
 
         objects.gameLoop.resume();
 
       },
 
-      blur: function(e) {
+      blur: function() {
 
         objects.keyboardMonitor.releaseAll();
         objects.gameLoop.pause();
 
       }
 
-    }
+    };
 
     function addEvents() {
 
@@ -7258,7 +7309,7 @@ console.log('result of collision check with spaceball', hit);
 
       init: init
 
-    }
+    };
 
   }
 
@@ -7267,24 +7318,17 @@ console.log('result of collision check with spaceball', hit);
     var data = {
       score: 0,
       lives: DEFAULT_LIVES
-    }
+    };
 
     var dom = {
       lives: null,
       points: null,
       smartbombs: null
-    }
+    };
 
     function getScore() {
 
       return data.score;
-
-    }
-
-    function addPoints(points) {
-
-      data.score += points;
-      updatePoints();
 
     }
 
@@ -7296,10 +7340,26 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
-    function resetScore() {
+    function addPoints(points) {
 
-      data.score = 0;
+      data.score += points;
       updatePoints();
+
+    }
+
+    function updateLives() {
+
+      if (dom.lives) {
+        dom.lives.innerHTML = data.lives;
+      }
+
+    }
+
+    function updateSmartbombs() {
+
+      if (dom.smartbombs) {
+        dom.smartbombs.innerHTML = game.objects.ship.data.smartbombs;
+      }
 
     }
 
@@ -7320,9 +7380,9 @@ console.log('result of collision check with spaceball', hit);
 
         // game over man, game over!
 
-        o = document.getElementById('game-over-screen'),
-        oStats = document.getElementById('game-over-stats'),
-        oStatsBody = o.getElementsByTagName('div')[0],
+        o = document.getElementById('game-over-screen');
+        oStats = document.getElementById('game-over-stats');
+        oStatsBody = o.getElementsByTagName('div')[0];
         statsData = game.objects.statsController.getStats();
 
         isGameOver = true;
@@ -7359,7 +7419,7 @@ console.log('result of collision check with spaceball', hit);
 
           objects.gameLoop.resume();
 
-        }
+        };
         
       }
 
@@ -7367,19 +7427,11 @@ console.log('result of collision check with spaceball', hit);
 
     }
 
-    function updateLives() {
+    function refreshUI() {
 
-      if (dom.lives) {
-        dom.lives.innerHTML = data.lives;
-      }
-
-    }
-
-    function updateSmartbombs() {
-
-      if (dom.smartbombs) {
-        dom.smartbombs.innerHTML = game.objects.ship.data.smartbombs;
-      }
+      updateLives();
+      updatePoints();
+      updateSmartbombs();
 
     }
 
@@ -7392,14 +7444,6 @@ console.log('result of collision check with spaceball', hit);
       data.lives = DEFAULT_LIVES;
 
       refreshUI();
-
-    }
-
-    function refreshUI() {
-
-      updateLives();
-      updatePoints();
-      updateSmartbombs();
 
     }
 
@@ -7424,7 +7468,7 @@ console.log('result of collision check with spaceball', hit);
       shipDied: shipDied,
       updateSmartbombs: updateSmartbombs
 
-    }
+    };
 
   }
 
@@ -7435,10 +7479,6 @@ console.log('result of collision check with spaceball', hit);
       flashColor: '#fff',
       frame: 0,
       frameCount: 4
-    }
-
-    var dom = {
-      
     };
 
     function animate() {
@@ -7492,7 +7532,7 @@ console.log('result of collision check with spaceball', hit);
     return {
       animate: animate,
       fire: fire
-    }
+    };
 
   }
 
@@ -7503,7 +7543,7 @@ console.log('result of collision check with spaceball', hit);
       badGuy: 0,
       turret: 0,
       base: 0
-    }
+    };
 
     function record(type, amount) {
 
@@ -7530,20 +7570,18 @@ console.log('result of collision check with spaceball', hit);
       getStats: getStats,
       record: record,
       reset: reset
-    }
+    };
 
   }
 
   (function DebugPanel() {
-
-    var o;
 
     var data = {
 
       timer: null,
       timerInterval: 1000
 
-    }
+    };
 
     var dom = {
 
@@ -7555,7 +7593,7 @@ console.log('result of collision check with spaceball', hit);
       spaceballCount: null,
       badGuyCount: null
 
-    }
+    };
 
     function handleChange(e) {
 
@@ -7573,13 +7611,15 @@ console.log('result of collision check with spaceball', hit);
 
     function refreshStats() {
 
-      var onScreen = 0, i, j, k;
+      var i, j, k, l,
+          onScreen = 0,
+          bases;
 
-      var bases = game.objects.baseController.objects.bases;
+      bases = game.objects.baseController.objects.bases;
 
-      for (i = bases.length; i--;) {
-        for (j = bases[i].objects.turrets.length; j--;) {
-          if (!bases[i].objects.turrets[j].objects.turretGunfire.data.dead && game.objects.screen.isInView(bases[i].objects.turrets[j].objects.turretGunfire.data.col, bases[i].objects.turrets[j].objects.turretGunfire.data.row)) {
+      for (i=0, j=bases.length; i<j; i++) {
+        for (k=0, l=bases[i].objects.turrets.length; k<l; k++) {
+          if (!bases[i].objects.turrets[k].objects.turretGunfire.data.dead && game.objects.screen.isInView(bases[i].objects.turrets[k].objects.turretGunfire.data.col, bases[i].objects.turrets[k].objects.turretGunfire.data.row)) {
             onScreen++;
           }
         }
@@ -7597,7 +7637,7 @@ console.log('result of collision check with spaceball', hit);
 
       onScreen = 0;
 
-      for (i = game.objects.spaceBalls.length; i--;) {
+      for (i=0, j=game.objects.spaceBalls.length; i<j; i++) {
         if (game.objects.screen.isInView(game.objects.spaceBalls[i].data.col, game.objects.spaceBalls[i].data.row)) {
           onScreen++;
         }
@@ -7607,7 +7647,7 @@ console.log('result of collision check with spaceball', hit);
 
       onScreen = 0;
 
-      for (i = game.objects.badGuyController.objects.badGuys.length; i--;) {
+      for (i=0, j=game.objects.badGuyController.objects.badGuys.length; i<j; i++) {
         if (game.objects.badGuyController.objects.badGuys[i].data.active && game.objects.screen.isInView(game.objects.badGuyController.objects.badGuys[i].data.col, game.objects.badGuyController.objects.badGuys[i].data.row)) {
           onScreen++;
         }
@@ -7625,7 +7665,8 @@ console.log('result of collision check with spaceball', hit);
 
     function init() {
 
-      var o, i, items;
+      var o, i, j,
+          items;
 
       o = document.getElementById('debug-panel');
 
@@ -7645,7 +7686,7 @@ console.log('result of collision check with spaceball', hit);
 
         items = o.getElementsByTagName('input');
 
-        for (i = items.length; i--;) {
+        for (i=0, j=items.length; i<j; i++) {
 
           utils.events.add(items[i], 'click', handleChange);
 
@@ -7675,15 +7716,13 @@ console.log('result of collision check with spaceball', hit);
 
   function createSpaceBalls() {
 
-    var i, j, k, l;
-    var spaceBallCount = DEFAULT_SPACEBALLS;
-
-    var freeSpaces = [];
-    var location;
-    var rows = data.map.length;
-    var cols = data.map[0].length;
-
-    var x, tmp;
+    var i, j, k, l,
+        x, tmp,
+        spaceBallCount = DEFAULT_SPACEBALLS,
+        freeSpaces = [],
+        location,
+        rows = data.map.length,
+        cols = data.map[0].length;
 
     // check for space characters in the map character data.
     // these are safe spaces to occupy.
@@ -7708,19 +7747,19 @@ console.log('result of collision check with spaceball', hit);
       x.style.height = '31px';
       x.style.border = '1px solid #66ff66';
       // x.style.background = '#006600';
-      for (i=freeSpaces.length; i--;) {
+      for (i=0, j=freeSpaces.length; i<j; i++) {
         tmp = x.cloneNode(false);
         tmp.style.left = (freeSpaces[i].col * data.NODE_WIDTH) + 'px';
         tmp.style.top = (freeSpaces[i].row * data.NODE_HEIGHT) + 'px';
-        dom.worldFragment.appendChild(tmp)
+        dom.worldFragment.appendChild(tmp);
       }
 
     }
 
-    for (i=spaceBallCount; i--;) {
+    for (i=0, j=spaceBallCount; i<j; i++) {
 
       // choose a random location...
-      location = parseInt(Math.random()*freeSpaces.length);
+      location = parseInt(Math.random()*freeSpaces.length, 10);
 
       objects.spaceBalls.push(new SpaceBall(freeSpaces[location]));
 
@@ -7737,76 +7776,12 @@ console.log('result of collision check with spaceball', hit);
 
   }
 
-  var mapTypes = {
-    '0': function() { return new Block(mixin(getArgs(arguments)[0], {type: 'block', subType: 'type-0'})) },
-    '1': function() { return new Block(mixin(getArgs(arguments)[0], {type: 'block', subType: 'type-1'})) },
-    '2': function() { return new Block(mixin(getArgs(arguments)[0], {type: 'block', subType: 'type-2'})) },
-    '3': function() { return new Block(mixin(getArgs(arguments)[0], {type: 'block', subType: 'type-3'})) }
-  }
-
-  /**
-   * NOTE: UTF-8 character encoding required for map parsing to work.
-   * reference: http://en.wikipedia.org/wiki/Box-drawing_characters
-   * empty space inside walls is marked by a period character - "."
-   * space inside bases, not safe to be occupied is marked by a middle dot - Georgian comma (&middot;) - "·"
-   */
-
-  var MAP_FREE_SPACE_CHAR = ' ';
-  var MAP_ALT_FREE_SPACE_CHAR = '_';
-  var MAP_INSIDE_BASE_CHAR = '·';
-  var MAP_INSIDE_WALLS_CHAR = '.';
-
-  mapData = [
-    '                                                                         ',
-    '                                                                         ',
-    '    000000000000000000000000000                                          ',
-    '    000000000000000000000000000                                          ',
-    '    00.......................00                                          ',
-    '    00.......................00                                          ',
-    '    00..............┏┻━┓.....00            333333333333333333            ',
-    '    00.........┏┻━━┻┛┏━┛.....00           33333333333333333333           ',
-    '    00...┏┻┓...┃·····┣.......00          33..................33          ',
-    '    00...┗┓┗┻━┻┛·····┗━┓.....00         33....................33         ',
-    '    00....┫┏━━━━┓····┏━┛.....00        33.......╔╩╗............33        ',
-    '    00....┃┃....┫····┣.......00       33........╚╗╚═╩═╩╗........33       ',
-    '    00....┫┗┓┏━━┛····┗━┓.....0033333333..........╣╔╦╗··╠.........33      ',
-    '    00....┗━┛┃·┏━┳━┳┓┏┳┛.....0033333333.........╔╝│.│╔╦╝.........33      ',
-    '    00.......┗┳┛....┗┛.......00       33........╚╦╝.╚╝..........33       ',
-    '    00.......................00        33......................33        ',
-    '    00.......................00         33....................33         ',
-    '    000000000000000000000000000          33..................33          ',
-    '    000000000000000000000000000           33333333333333333333           ',
-    '          00                               333333333333333333            ',
-    '          00                                            33               ',
-    '          00                                            33               ',
-    '          11                                            33               ',
-    '          11                                            33               ',
-    '          11                               2            222              ',
-    '          11                              222           2222             ',
-    '          11                             22.22         22..22            ',
-    '         111                            22...22       22....22           ',
-    '        11.11                          22.....22     22......22          ',
-    '       11...11                        22.......22   22........22         ',
-    '      11.....11                      22.........22222..........22        ',
-    '     11.┌┐.┌┐.11                    22..╓╨─╨╖╓╨╖.222..╓╖........22       ',
-    '    11.┌┘└┴┘└┐.11                  22...╢·╓─╜╙╖╙╖...╓╨╜╟.........22      ',
-    '   11..└┐···┌┘..11                22....╙╖╟···╙╖╙╨─╨╜╓─╜..........22     ',
-    '  11....┤···├....11111           22......╢║····╢·····╟.............22    ',
-    '  11...┌┘···└┐.....111111111111222.......║╟····║·····╙──╖...........22   ',
-    '   11..┤┌┬-┬┐├..111111111111111222.......╢╙────╜········╟............22  ',
-    '    11.└┘...└┘.11                22....╓─╜·╓╥╖·······╓──╜...........22   ',
-    '     11.......11                  22...╙╖··║.║·······╟.............22    ',
-    '      11.....11                    22...╢╓─╜.║·╓╥─╥╖·╙─╖..........22     ',
-    '       11...11                      22..╙╜...╙╥╜...╙─╥╖╟.........22      ',
-    '        11.11                        22...........222.╙╜........22       ',
-    '         111                          22.........22222.........22        ',
-    '          1                            22...2...22   22...2...22         ',
-    '                                        22.222.22     22.222.22          ',
-    '                                         222 222       222 222           ',
-    '                                          2   2         2   2            ',
-    '                                                                         ',
-    '                                                                         '
-  ];
+  mapTypes = {
+    '0': function() { return new Block(mixin(getArgs(arguments)[0], {type: 'block', subType: 'type-0'})); },
+    '1': function() { return new Block(mixin(getArgs(arguments)[0], {type: 'block', subType: 'type-1'})); },
+    '2': function() { return new Block(mixin(getArgs(arguments)[0], {type: 'block', subType: 'type-2'})); },
+    '3': function() { return new Block(mixin(getArgs(arguments)[0], {type: 'block', subType: 'type-3'})); }
+  };
 
   // user-provided map
   if (window.location.toString().match(/mapData/)) {
@@ -7827,30 +7802,6 @@ console.log('result of collision check with spaceball', hit);
   }
 
   objects.mapData = mapData;
-
-  function makeGridItem(oOptions) {
-
-    var x, y, node, type, subType;
-
-    var oNode = oOptions.node;
-
-    var o;
-
-    x = oOptions.x;
-    y = oOptions.y;
-    type = oOptions.type;
-    subType = oOptions.subType;
-
-    o = dom.gridItemTemplate.cloneNode(oNode);
-
-    o.style.left = (game.data.NODE_WIDTH * x) + 'px';
-    o.style.top = (game.data.NODE_HEIGHT * y) + 'px';
-
-    o.className = type + ' ' + subType;
-
-    return o;
-
-  }
 
   function createGrid() {
 
@@ -7918,17 +7869,9 @@ console.log('result of collision check with spaceball', hit);
 
   }
 
-  var audioPitchCounter = 0;
-  var audioPitchCounterMax = 15;
-  var audioBoomScale = [0,0,1,2,2,3,4,4,5,6,6,7,8,8,9,10];
-  var lastAudioIncrement = new Date();
-  var audioIncrementThrottle = 333;
-
   function createShip() {
-
     objects.ship = new Ship();
     objects.ship.init();
-
   }
 
   function makeRandomBadGuy(force) {
@@ -7940,24 +7883,6 @@ console.log('result of collision check with spaceball', hit);
       console.log('no bad guy this time around');
     }
     setTimeout(makeRandomBadGuy, 10000 + parseInt(Math.random() * 15000, 10));
-  }
-
-  function getAudioPitch() {
-    return Math.floor(audioPitchCounter);
-  }
-
-  function incrementAudioPitch() {
-    // throttle audible pitch increase calls
-    var now = new Date();
-    if (now - lastAudioIncrement > audioIncrementThrottle) {
-      
-      lastAudioIncrement = now;
-      audioPitchCounter += 0.5;
-      if (audioPitchCounter >= audioPitchCounterMax) {
-        audioPitchCounter = 0;
-      }
-    }
-    return getAudioPitch();
   }
 
   function reset() {
@@ -7987,7 +7912,7 @@ console.log('result of collision check with spaceball', hit);
     }
 
     // reset the spaceballs, too
-    for (i=game.objects.spaceBalls.length; i--;) {
+    for (i=0, j=game.objects.spaceBalls.length; i<j; i++) {
       game.objects.spaceBalls[i].restore();
     }
 
@@ -8091,6 +8016,62 @@ console.log('result of collision check with spaceball', hit);
 
   }
 
+  function initAudio() {
+
+    var i;
+
+    features.audio = true;
+
+    soundManager.createSound({
+      id: 'gamewarp-start',
+      url: 'audio/gamewarp-start.mp3'
+    }).play();
+
+    soundManager.createSound({
+      id: 'heartbeat',
+      url: 'audio/heartbeat.mp3',
+      multiShot: true,
+      autoLoad: true
+    });
+
+    soundManager.createSound({
+      id: 'badguy-loop-0',
+      url: 'audio/badguy-loop-1.mp3',
+      loops: 999,
+      autoLoad: true
+    });
+
+    soundManager.createSound({
+      id: 'badguy-loop-1',
+      url: 'audio/badguy-loop-2.mp3',
+      loops: 999,
+      autoLoad: true
+    });
+
+    soundManager.createSound({
+      id: 'base-explode',
+      url: 'audio/base-explode.mp3',
+      autoLoad: true
+    });
+
+    for (i=0; i<soundSprites.boomSpriteCounterMax; i++) {
+      soundManager.createSound({
+        id: 'boom-sprite-'+i,
+        url: 'audio/boom-sprite.mp3',
+        autoLoad: true
+      });
+    }
+
+    for (i=0; i<soundSprites.popSpriteCounterMax; i++) {
+      soundManager.createSound({
+        id: 'pop-sprite-'+i,
+        url: 'audio/pop-sprite.mp3',
+        autoLoad: true
+      });
+    }
+
+  }
+
   function init() {
 
     objects.gameLoop = new GameLoop();
@@ -8173,69 +8154,13 @@ console.log('result of collision check with spaceball', hit);
 
   }
 
-  function initAudio() {
-
-    var i;
-
-    features.audio = true;
-
-    soundManager.createSound({
-      id: 'gamewarp-start',
-      url: 'audio/gamewarp-start.mp3'
-    }).play();
-
-    var heartbeat = soundManager.createSound({
-      id: 'heartbeat',
-      url: 'audio/heartbeat.mp3',
-      multiShot: true,
-      autoLoad: true
-    });
-
-    soundManager.createSound({
-      id: 'badguy-loop-0',
-      url: 'audio/badguy-loop-1.mp3',
-      loops: 999,
-      autoLoad: true
-    });
-
-    soundManager.createSound({
-      id: 'badguy-loop-1',
-      url: 'audio/badguy-loop-2.mp3',
-      loops: 999,
-      autoLoad: true
-    });
-
-    var baseExplode = soundManager.createSound({
-      id: 'base-explode',
-      url: 'audio/base-explode.mp3',
-      autoLoad: true
-    });
-
-    for (i=0; i<soundSprites.boomSpriteCounterMax; i++) {
-      soundManager.createSound({
-        id: 'boom-sprite-'+i,
-        url: 'audio/boom-sprite.mp3',
-        autoLoad: true
-      });
-    }
-
-    for (i=0; i<soundSprites.popSpriteCounterMax; i++) {
-      soundManager.createSound({
-        id: 'pop-sprite-'+i,
-        url: 'audio/pop-sprite.mp3',
-        autoLoad: true
-      });
-    }
-
-  }
-
   return {
     init: init,
     mapData: mapData,
     reset: reset
-  }
+  };
 
-};
+}
 
 function go_go_go() {
 
@@ -8245,7 +8170,11 @@ function go_go_go() {
 
   var tweeter = document.getElementById('tweeter');
 
-  var bypassIntro = (document.location.href.match(/nointro/i) || (document.referrer && document.referrer.match(/editor/i) || (!document.location.protocol.match(/http/i) && document.location.href.match(/mapdata/i)))),
+  var bypassIntro = (
+        document.location.href.match(/nointro/i)
+        || (document.referrer && document.referrer.match(/editor/i))
+        || ((!document.location.protocol.match(/http/i) && document.location.href.match(/mapdata/i)))
+      ),
       l0 = document.getElementById('loading0'),
       l1 = document.getElementById('loading1'),
       l2 = document.getElementById('loading2');
@@ -8261,6 +8190,40 @@ function go_go_go() {
     survivor = new Survivor();
     survivor.init();
     document.getElementById('world-container').style.display = 'block';
+
+  }
+
+  function hideGameTitleScreen() {
+
+    var boot = document.getElementById('boot-screen');
+    var title = document.getElementById('title-screen');
+
+    boot.parentNode.removeChild(boot);
+    title.parentNode.removeChild(title);
+
+  }
+
+  function showGameTitleScreen() {
+
+    var title = document.getElementById('title-screen');
+    var c64 = document.getElementById('c64');
+
+    title.style.display = 'block';
+
+    c64.parentNode.removeChild(c64);
+
+    if (soundManager.ok() && !IS_MUTED) {
+      soundManager.createSound({
+        id: 'valkyries',
+        url: 'audio/valkyries.mp3',
+        autoPlay: true
+      });
+    }
+
+    title.onclick = function() {
+      hideGameTitleScreen();
+      startGame();
+    };
 
   }
 
@@ -8281,7 +8244,6 @@ function go_go_go() {
         var webCirca1999,
             msg,
             serviceURL,
-            url,
             str,
             mapData,
             xhr;
@@ -8294,17 +8256,17 @@ function go_go_go() {
 
         msg = 'I designed an 80\'s-era arcade game level. Think you can beat it? Play and remix it here.';
 
-        xhr = new XMLHttpRequest();
+        xhr = new window.XMLHttpRequest();
 
         xhr.onreadystatechange = function() {
 
           var json;
 
-          if (xhr.readyState != 4) {
+          if (xhr.readyState !== 4) {
             return;
           }
 
-          if (xhr.status != 200 && xhr.status != 304) {
+          if (xhr.status !== 200 && xhr.status !== 304) {
             console('HTTP error ' + xhr.status);
             return;
           }
@@ -8318,7 +8280,7 @@ function go_go_go() {
 
           }
 
-        }
+        };
 
         // open ze window
         webCirca1999 = window.open('shorturl/blank.html', 'survivorTweetWindow', 'width=640,height=250');
@@ -8339,7 +8301,7 @@ function go_go_go() {
 
         return false;
 
-      }
+      };
 
     }
 
@@ -8404,47 +8366,6 @@ function go_go_go() {
     document.getElementById('go_go_go').style.display = 'block';
 
     window.setTimeout(showGameTitleScreen, 2500);
-
-  }
-
-  function showHelpScreen() {
-  }
-
-  function hideHelpScreen() {
-  }
-
-  function hideGameTitleScreen() {
-
-    var boot = document.getElementById('boot-screen');
-    var title = document.getElementById('title-screen');
-    var c64 = document.getElementById('c64');
-
-    boot.parentNode.removeChild(boot);
-    title.parentNode.removeChild(title);
-
-  }
-
-  function showGameTitleScreen() {
-
-    var title = document.getElementById('title-screen');
-    var c64 = document.getElementById('c64');
-
-    title.style.display = 'block';
-
-    c64.parentNode.removeChild(c64);
-
-    if (soundManager.ok() && !IS_MUTED) {
-      soundManager.createSound({
-        id: 'valkyries',
-        url: 'audio/valkyries.mp3',
-        autoPlay: true
-      });
-    }
-
-    title.onclick = function() {
-      hideGameTitleScreen();
-      startGame();
-    }
 
   }
 
