@@ -4,6 +4,7 @@
  * based on the Commodore 64 version of Survivor from 1983
  * -------------------------------------------------------
  * http://schillmania.com/survivor/
+ * http://www.schillmania.com/content/entries/2012/survivor-c64-html-remake/
  * http://www.flickr.com/photos/schill/sets/72157628885315581/
  * http://github.com/scottschiller/
  *
@@ -14,16 +15,9 @@
  */
 
 /*global window, console, document, navigator, setTimeout, setInterval, clearInterval, soundManager */
-/*jslint vars: true, regexp: true, sloppy: true, white: true, nomen: true, plusplus: true */
+/*jslint vars: true, regexp: true, sloppy: true, white: true, nomen: true, plusplus: true, todo: true */
 
-// 4.20.12: Almost lint-free, save for "unsafe characters" used to draw map.
-
-if (typeof window.console === 'undefined') {
-  // hax
-  window.console = {
-    log: function() {}
-  };
-}
+// 5.25.2013: The jslint gods have been appeased.
 
 /**
  *
@@ -126,6 +120,15 @@ var survivor;
 
 (function(window) {
 
+if (window.console === undefined) {
+  // hax
+  window.console = {
+    log: function() {
+      return false;
+    }
+  };
+}
+
 var IS_MUTED = window.location.href.toString().match(/mute/i);
 
 function Survivor() {
@@ -134,7 +137,6 @@ function Survivor() {
   var game,
       data,
       dom,
-      events,
       objects,
       mapTypes,
       mapData,
@@ -281,7 +283,6 @@ function Survivor() {
 
     data: data,
     dom: dom,
-    events: events,
     objects: objects
 
   };
@@ -355,7 +356,7 @@ function Survivor() {
 
       function hasClass(o, cStr) {
 
-        return (typeof(o.className)!=='undefined'?new RegExp('(^|\\s)'+cStr+'(\\s|$)').test(o.className):false);
+        return (o.className !== undefined ? new RegExp('(^|\\s)'+cStr+'(\\s|$)').test(o.className) : false);
 
       }
 
@@ -410,13 +411,13 @@ function Survivor() {
 
       var add, remove, preventDefault;
 
-      add = (typeof window.addEventListener !== 'undefined' ? function(o, evtName, evtHandler) {
+      add = (window.addEventListener !== undefined ? function(o, evtName, evtHandler) {
         return o.addEventListener(evtName,evtHandler,false);
       } : function(o, evtName, evtHandler) {
         o.attachEvent('on'+evtName,evtHandler);
       });
 
-      remove = (typeof window.removeEventListener !== 'undefined' ? function(o, evtName, evtHandler) {
+      remove = (window.removeEventListener !== undefined ? function(o, evtName, evtHandler) {
         return o.removeEventListener(evtName,evtHandler,false);
       } : function(o, evtName, evtHandler) {
         return o.detachEvent('on'+evtName,evtHandler);
@@ -455,21 +456,22 @@ function Survivor() {
      * https://gist.github.com/838785
      */
 
-    getAnimationFrame = (function() {
-      return window.requestAnimationFrame  ||
+    var _animationFrame = (window.requestAnimationFrame ||
         window.webkitRequestAnimationFrame ||
-        window.mozRequestAnimationFrame    ||
-        window.oRequestAnimationFrame      ||
-        window.msRequestAnimationFrame     ||
-        null;
-    }());
+        window.mozRequestAnimationFrame ||
+        window.oRequestAnimationFrame ||
+        window.msRequestAnimationFrame ||
+        null);
 
-    // TODO: sort out "illegal invocation" Chrome errors when trying to call wrapped function.
-    // also, it delivers lower FPS at time of writing anyways.
-    getAnimationFrame = null;
+    // apply to window, avoid "illegal invocation" errors in Chrome
+    getAnimationFrame = _animationFrame ? function() {
+      return _animationFrame.apply(window, arguments);
+    } : null;
 
-    if (getAnimationFrame && window.location.toString().match(/interval/i)) {
-      console.log('forcing setInterval() for game loop');
+    // requestAnimationFrame is still somewhat slower in this case than an old-skool setInterval(). Not sure why.
+    if (getAnimationFrame && window.location.toString().match(/raf=1/i)) {
+      console.log('preferring requestAnimationFrame for game loop');
+    } else {
       getAnimationFrame = null;
     }
 
@@ -479,7 +481,7 @@ function Survivor() {
 
       // test for feature support
       var result = testDiv.style[prop];
-      return (typeof result !== 'undefined' ? prop : null);
+      return (result !== undefined ? prop : null);
 
     }
 
@@ -580,9 +582,9 @@ function Survivor() {
       }
     }
 
-    o2 = (typeof oAdd === 'undefined'?{}:oAdd);
+    o2 = (oAdd === undefined ? {} : oAdd);
     for (o in o2) {
-      if (o2.hasOwnProperty(o) && typeof o1[o] === 'undefined') {
+      if (o2.hasOwnProperty(o) && o1[o] === undefined) {
         o1[o] = o2[o];
       }
     }
@@ -667,7 +669,7 @@ function Survivor() {
 
       GAME_SPEED: 1, // the game speed multiplier
       loopTimer: null,
-      loopInterval: 1000/30, // aim for 30 fps
+      loopInterval: 1000/33, // aim for 33 fps
       lastPhase: null,
       pulseCount: 0,
       pulseStage: 0,
@@ -795,9 +797,9 @@ function Survivor() {
 
     };
 
-    function refreshAnimationCallback(time) {
+    function refreshAnimationCallback() {
 
-      var now = (time || new Date()),
+      var now = new Date(),
           delta = now - lastExec;
 
       if (delta >= data.loopInterval) {
@@ -1014,7 +1016,7 @@ function Survivor() {
     function startAnimation(oBlock) {
 
       // we have something that should now be animating.
-      if (typeof objects.blocks_hash[oBlock.data.id] === 'undefined') {
+      if (objects.blocks_hash[oBlock.data.id] === undefined) {
 
         objects.blocks_hash[oBlock.data.id] = true;
         objects.blocks.push(oBlock);
@@ -1060,8 +1062,6 @@ function Survivor() {
       hitFrames: 6
 
     };
-
-    var counter = 0;
 
     function hittable() {
       // this thing can be hit (or collide with the ship), provied it is active.
@@ -1190,8 +1190,6 @@ function Survivor() {
           // edge case (and tell controller this should not be animated any more.)
           return true;
         }
-
-        counter++;
 
         var complete = false;
 
@@ -2449,7 +2447,7 @@ function Survivor() {
 
     var evt = e || window.event;
 
-    if (typeof evt.preventDefault !== 'undefined') {
+    if (evt.preventDefault !== undefined) {
 
       evt.preventDefault();
 
@@ -2468,7 +2466,7 @@ function Survivor() {
     var keys,
         events,
 
-    // hash for keys being pressed
+       // hash for keys being pressed
        downKeys = {},
 
        // meaningful labels for key values
@@ -2487,11 +2485,11 @@ function Survivor() {
       keydown: function(e) {
 
         if (keys[e.keyCode] && keys[e.keyCode].down) {
-          if (typeof downKeys[e.keyCode] === 'undefined') {
+          if (downKeys[e.keyCode] === undefined) {
             downKeys[e.keyCode] = true;
             keys[e.keyCode].down(e);
           }
-          if (typeof keys[e.keyCode].allowEvent === 'undefined') {
+          if (keys[e.keyCode].allowEvent === undefined) {
             return stopEvent(e);
           }
         }
@@ -2500,12 +2498,12 @@ function Survivor() {
 
       keyup: function(e) {
 
-        if (typeof downKeys[e.keyCode] !== 'undefined' && keys[e.keyCode]) {
+        if (downKeys[e.keyCode] !== undefined && keys[e.keyCode]) {
           delete downKeys[e.keyCode];
           if (keys[e.keyCode].up) {
             keys[e.keyCode].up(e);
           }
-          if (typeof keys[e.keyCode].allowEvent === 'undefined') {
+          if (keys[e.keyCode].allowEvent === undefined) {
             return stopEvent(e);
           }
         }
@@ -2644,7 +2642,7 @@ function Survivor() {
     function isDown(labelOrCode) {
 
       // check for a pressed key based on '37' or 'left', etc.
-      return (typeof keyMap[labelOrCode] !== 'undefined' ? downKeys[keyMap[labelOrCode]] : downKeys[labelOrCode]);
+      return (keyMap[labelOrCode] !== undefined ? downKeys[keyMap[labelOrCode]] : downKeys[labelOrCode]);
 
     }
 
@@ -3143,7 +3141,7 @@ function Survivor() {
 
     function check(row, col) {
 
-      return (typeof data.pixelMap[row] !== 'undefined' && data.pixelMap[row] && typeof data.pixelMap[row][col] !== 'undefined' && data.pixelMap[row][col]);
+      return (data.pixelMap[row] !== undefined && data.pixelMap[row] && data.pixelMap[row][col] !== undefined && data.pixelMap[row][col]);
 
     }
 
@@ -3893,10 +3891,9 @@ function Survivor() {
 
     function getIntersect(x,y) {
 
-      var location,
-          mapItem;
+      var location;
 
-      if (typeof x === 'undefined' || typeof y === 'undefined') {
+      if (x === undefined || y === undefined) {
         console.log('getIntersect(): WARN: x/y undefined');
         return {
           location: null,
@@ -3905,10 +3902,6 @@ function Survivor() {
       }
 
       location = xyToRowCol(x, y);
-
-      // is there an object on the map here?
-
-      mapItem = (game.data.map[location.row][location.col] || null);
 
       return {
         row: location.row,
@@ -4259,8 +4252,6 @@ function Survivor() {
 
     var nodeParent = game.dom.world;
 
-    var frame = 0;
-
     // die when fire hits end of screen?
 
     function hide() {
@@ -4326,7 +4317,6 @@ function Survivor() {
       hide();
 
       data.active = false;
-      frame = 0;
 
       moveTo(0,0);
 
@@ -4668,16 +4658,6 @@ function Survivor() {
 
     }
 
-    function init() {
-
-      // append to DOM
-      // game.dom.world.appendChild(o);
-
-    }
-
-    // hack/convenience: start right away?
-    init();
-
     fire();
 
     objectInterface = {
@@ -4685,8 +4665,7 @@ function Survivor() {
       collisionCheck: collisionCheck,
       data: data,
       die: die,
-      hittable: hittable,
-      init: init
+      hittable: hittable
     };
 
     return objectInterface;
@@ -5793,7 +5772,7 @@ function Survivor() {
 
     var o;
 
-    var frameCount = 0;
+    // var frameCount = 0;
 
     var css = {
       exploding: 'exploding',
@@ -5853,9 +5832,9 @@ function Survivor() {
 
       if (!data.exploded && data.exploding) {
 
-        frameCount++;
+        // frameCount++;
 
-//        if (frameCount % 2 === 0) {
+        // if (frameCount % 2 === 0) {
 
           o.style.backgroundPosition = '0px ' + (data.explosionFrame * -32) + 'px';
           data.explosionFrame++;
@@ -5863,7 +5842,7 @@ function Survivor() {
             data.explosionFrame = 0;
           }
 
-//        }
+        // }
 
       }
 
@@ -5972,7 +5951,7 @@ function Survivor() {
       row = Math.floor(row);
       col = Math.floor(col);
 
-      return typeof map[row] !== 'undefined' && typeof map[row][col] !== 'undefined' ? map[row][col] : null;
+      return map[row] !== undefined && map[row][col] !== undefined ? map[row][col] : null;
 
     }
 
@@ -5982,7 +5961,7 @@ function Survivor() {
 
       var previous;
 
-      if (typeof lastLocation[id] !== 'undefined') {
+      if (lastLocation[id] !== undefined) {
         previous = lastLocation[id];
         if (map[previous.row] && map[previous.row][previous.col]) {
           map[previous.row][previous.col] = null;
@@ -6003,7 +5982,7 @@ function Survivor() {
           col = oOptions.col,
           row = oOptions.row;
 
-      if (typeof id === 'undefined') {
+      if (id === undefined) {
         console.log('registerLocation: id required.');
         return false;
       }
@@ -6016,7 +5995,7 @@ function Survivor() {
 
       // console.log('registering ' + col + ', ' + row);
 
-      if (typeof map[row] === 'undefined' || typeof map[row][col] === 'undefined') {
+      if (map[row] === undefined || map[row][col] === undefined) {
         console.log('registerLocation(): row/col ' + row + ', ' + col + ' is invalid?');
         return false;
       }
@@ -6090,7 +6069,6 @@ function Survivor() {
           'up': 'vertical',
           'down': 'vertical'
         },
-        frame = 0,
         nodeParent = game.dom.world;
 
     data = {
@@ -6214,7 +6192,6 @@ function Survivor() {
       hide();
 
       data.active = false;
-      frame = 0;
 
       data.x = 0;
       data.y = 0;
@@ -6416,7 +6393,7 @@ function Survivor() {
 
     var o;
 
-    var frameCount = 0;
+    // var frameCount = 0;
 
     var css = {
       exploding: 'exploding',
@@ -6665,9 +6642,9 @@ function Survivor() {
 
       if (data.exploding) {
 
-        frameCount++;
+        // frameCount++;
 
-//        if (frameCount % 2 === 0) {
+        // if (frameCount % 2 === 0) {
 
           // individual turret + base destruction animation
 
@@ -6688,7 +6665,7 @@ function Survivor() {
 
           }
 
-//        }
+        // }
 
       }
 
@@ -7182,7 +7159,7 @@ function Survivor() {
           baseItemObject;
 
       // sanity check
-      if (typeof baseItemMap[char] === 'undefined') {
+      if (baseItemMap[char] === undefined) {
         console.log('addBaseItem('+char+'): Illegal map character.');
         return false;
       }
@@ -7209,7 +7186,7 @@ function Survivor() {
     function isBaseItem(char) {
 
       // is this a base map character?
-      return (char && typeof baseItemMap[char] !== 'undefined');
+      return (char && baseItemMap[char] !== undefined);
 
     }
 
@@ -7547,7 +7524,7 @@ function Survivor() {
 
     function record(type, amount) {
 
-      if (typeof data[type] !== 'undefined') {
+      if (data[type] !== undefined) {
         data[type] += (amount || 1);
       }
 
@@ -7574,7 +7551,7 @@ function Survivor() {
 
   }
 
-  (function DebugPanel() {
+  (function debugPanel() {
 
     var data = {
 
@@ -7825,7 +7802,7 @@ function Survivor() {
         // find the character and create the relevant object
         char = mapData[i].charAt(k);
 
-        if (char !== ' ' && typeof mapTypes[char] !== 'undefined') {
+        if (char !== ' ' && mapTypes[char] !== undefined) {
 
           gridItems[i].push(mapTypes[char]({
             'x': k,
