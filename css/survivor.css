@@ -114,6 +114,7 @@ body {
  top: 0px;
  width: 100%;
  height: 100%;
+ z-index: 1;
 }
 
 #screen-list {
@@ -181,8 +182,7 @@ body {
  padding: 0px;
  overflow: hidden;
  /* title-screen-letter-tile.gif */
- 
- background: #000 url(../image/title-screen-letter-tile.gif);
+  background: #000 url(../image/title-screen-letter-tile.gif);
 }
 
 #title-screen #title-header h1 {
@@ -369,6 +369,9 @@ body.show-help #world-container {
  -moz-transform: rotate(0deg), scale3d(1,1,1);
  -moz-transition: box-shadow 0.2s ease-in-out;
  -moz-transition-property: -moz-transform, box-shadow;
+ -ms-transform: rotate(0deg), scale3d(1,1,1);
+ -ms-transition: box-shadow 0.2s ease-in-out;
+ -ms-transition-property: -ms-transform, box-shadow;
  -webkit-transform: rotate(0deg), scale3d(1,1,1);
  -webkit-transition: box-shadow 0.2s ease-in-out;
  -webkit-transition-property: -webkit-transform, box-shadow;
@@ -379,9 +382,11 @@ body.show-help #world-container {
 .ship.hidden {
  -webkit-transition: none;
  -moz-transition: none;
+ -ms-transition: none;
  -o-transition: none;
  -webkit-transform: scale3d(0,0,1) !important;
- -moz-transform: scale(0) !important;
+ -moz-transform: scale3d(0,0,1) !important;
+ -ms-transform: scale3d(0,0,1) !important;
  -o-transform: scale3d(0,0,1) !important;
  *display: none; /* IE 8 */
 }
@@ -419,41 +424,49 @@ body.show-help #world-container {
 
 .ship-thrust-up {
  -moz-transform: rotate(0deg);
+ -ms-transform: rotate(0deg);
  -webkit-transform: rotate(0deg);
 }
 
 .ship.thrust-up.thrust-left {
  -moz-transform: rotate(-45deg);
+ -ms-transform: rotate(-45deg);
  -webkit-transform: rotate(-45deg);
 }
 
 .ship.thrust-up.thrust-right {
  -moz-transform: rotate(45deg);
+ -ms-transform: rotate(45deg);
  -webkit-transform: rotate(45deg);
 }
 
 .ship.thrust-right {
  -moz-transform: rotate(90deg);
+ -ms-transform: rotate(90deg);
  -webkit-transform: rotate(90deg);
 }
 
 .ship.thrust-down {
  -moz-transform: rotate(180deg);
+ -ms-transform: rotate(180deg);
  -webkit-transform: rotate(180deg);
 }
 
 .ship.thrust-down.thrust-left {
  -moz-transform: rotate(-135deg);
+ -ms-transform: rotate(-135deg);
  -webkit-transform: rotate(-135deg);
 }
 
 .ship.thrust-down.thrust-right {
  -moz-transform: rotate(135deg);
+ -ms-transform: rotate(135deg);
  -webkit-transform: rotate(135deg);
 }
 
 .ship.thrust-left {
  -moz-transform: rotate(-90deg);
+ -ms-transform: rotate(-90deg);
  -webkit-transform: rotate(-90deg);
 }
 
@@ -715,6 +728,19 @@ body.show-help #world-container {
  /* spaceball.png */
  background: transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAcCAYAAAAAwr0iAAAAgElEQVR42u2WQQqAMBAD+zjv4oP8hj/xffVacxkWA6HFQG4hO+1SaPuq89776GZVHoAHqikfB3AMeFml+fUBrmMbLXn2bABsER4gD1AsrA5A4DwAFNqvXJUHkID92VF/HqBYQIVVoAkAyKIqYB7g/w+Q3CtaH4BWEgCIfstZeYAH+iJJMw1O7SUAAAAASUVORK5CYII=) no-repeat 0px 0px;
  display: none;
+}
+
+.bad-guy,
+.ship-gunfire,
+.turret-gunfire,
+.spaceball,
+.big-explosion,
+#title-screen #title-header {
+ /* GPU accelation? Don't mind if I do. */
+ -ms-transform: translate3d(0px, 0px, 0px);
+ -moz-transform: translate3d(0px, 0px, 0px);
+ -webkit-transform: translate3d(0px, 0px, 0px);
+
 }
 
 #footer {
