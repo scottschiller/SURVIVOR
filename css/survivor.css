@@ -341,6 +341,15 @@ body.show-help #world-container {
  overflow: hidden;
 }
 
+.transform-sprite {
+ position: absolute;
+ top: 0px;
+ left: 0px;
+ width: 32px;
+ height: 128px;
+ overflow: visible;
+}
+
 /* except turret gunfire, which is relative to container. */
 .turret {
  overflow: visible;
@@ -551,24 +560,40 @@ body.show-help #world-container {
 
 .block.type-0 {
  border: 1px dotted #3399ff;
+}
+
+.block.type-0,
+.block.type-0 .transform-sprite {
  /* block-type-0.png */
  background: transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAACAAQMAAABQqPlZAAAABlBMVEUAAAD///+l2Z/dAAAAAXRSTlMAQObYZgAAAERJREFUKJFjYMAC+P///wAheBgYDGhNIGwjFiB08DEwFEC5DYzUJaDGU+Y+At7n/wAkOATwEWAlNAs/0mKLsQFGUC1+AXEhYCccrnvbAAAAAElFTkSuQmCC) no-repeat 0px 0px;
 }
 
 .block.type-1 {
  border: 1px dotted #ff3333;
+}
+
+.block.type-1,
+.block.type-1 .transform-sprite {
  /* block-type-1.png */
  background: transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAACAAgMAAAAXCIOJAAAADFBMVEUAAAAAAABoqUH///+Pb14MAAAAAXRSTlMAQObYZgAAAERJREFUOI3NkLENADAIw/Jkn+TJFFXsyRBVeEDeggw48CEEc7aI8XMKq89ppJAZMba29bGkKiOZf772qUYKkBFjK9LnApuVuQAKuhHCAAAAAElFTkSuQmCC) no-repeat 0px 0px;
 }
 
 .block.type-2 {
  border: 1px dotted #33ff33;
+}
+
+.block.type-2,
+.block.type-2 .transform-sprite {
  /* block-type-2.png */
  background: transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAACAAgMAAAAXCIOJAAAADFBMVEUAAABoqUGJQDb///8xngp2AAAAAXRSTlMAQObYZgAAAE9JREFUOI3Nk7EBwDAMwvIkT+pJ+kHRkCFMGm3ZnPOTtm0HAFmQlgUYIBPEzLei/ARYQBsB20+Y8JofM7PaXTg0t3jOj/h540d1UHT5rp8PSTfuIAS+AyMAAAAASUVORK5CYII=) no-repeat 0px 0px;
 }
 
 .block.type-3 {
  border: 1px dotted #ffff33;
+}
+
+.block.type-3,
+.block.type-3 .transform-sprite {
  /* block-type-3.png */
  background: transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAACAAgMAAAAXCIOJAAAADFBMVEUAAAAAAACJQDb///+BW6ugAAAAAXRSTlMAQObYZgAAAERJREFUOI3NkLENADAIw/Jkn+TJFFXsyRBVeEDeggw48CEEc7aI8XMKq89ppJAZMba29bGkKiOZf772qUYKkBFjK9LnApuVuQAKuhHCAAAAAElFTkSuQmCC) no-repeat 0px 0px;
 }
@@ -587,6 +612,76 @@ body.show-help #world-container {
 
 #world.phase-4 .block {
  background-position: 0px -128px;
+}
+
+/* translate3d-style GPU acceleration for sprites */
+
+#world.use-transforms .block {
+  /* no background here - move into an inner element */
+	background: transparent;
+}
+
+/* inner sprite element: this element gets the sprite and will be transformed, sliding within the container. */
+
+#world.use-transforms .block .transform-sprite {
+ -webkit-transform: translate3d(0px, 0px, 0px);
+}
+
+#world.use-transforms.phase-1 .block .transform-sprite {
+ -webkit-transform: translate3d(0px, -32px, 0px);
+}
+
+#world.use-transforms.phase-2 .block .transform-sprite {
+ -webkit-transform: translate3d(0px, -64px, 0px);
+}
+
+#world.use-transforms.phase-3 .block .transform-sprite {
+ -webkit-transform: translate3d(0px, -96px, 0px);
+}
+
+#world.use-transforms.phase-4 .block .transform-sprite {
+ -webkit-transform: translate3d(0px, -128px, 0px);
+}
+
+/* step-based animations, too */
+
+#world.use-transforms.pulse-interval-0 .block .transform-sprite {
+ -webkit-animation: pulse 2s steps(4, end) infinite;
+ -moz-animation: pulse 2s steps(4, end) infinite;
+ animation: pulse 2s steps(4, end) infinite;
+}
+
+#world.use-transforms.pulse-interval-1 .block .transform-sprite {
+ -webkit-animation: pulse 1.467s steps(4, end) infinite;
+ -moz-animation: pulse 1.467s steps(4, end) infinite;
+ animation: pulse 1.467s steps(4, end) infinite;
+}
+
+#world.use-transforms.pulse-interval-2 .block .transform-sprite {
+ -webkit-animation: pulse 0.933s steps(4, end) infinite;
+ -moz-animation: pulse 0.933s steps(4, end) infinite;
+ animation: pulse 0.933s steps(4, end) infinite;
+}
+
+#world.use-transforms.pulse-interval-3 .block .transform-sprite {
+ -webkit-animation: pulse 0.4s steps(4, end) infinite;
+ -moz-animation: pulse 0.4s steps(4, end) infinite;
+ animation: pulse 0.4s steps(4, end) infinite;
+}
+
+@-webkit-keyframes pulse {
+ from { -webkit-transform: translate3d(0px, 0px, 0px); }
+ to { -webkit-transform: translate3d(0px, -128px, 0px); }
+}
+
+@-moz-keyframes pulse {
+ from { -moz-transform: translate3d(0px, 0px, 0px); }
+ to { -moz-transform: translate3d(0px, -128px, 0px); }
+}
+
+@keyframes pulse {
+ from { transform: translate3d(0px, 0px, 0px); }
+ to { transform: translate3d(0px, 0px, 0px); }
 }
 
 .block.exploding,
@@ -609,6 +704,11 @@ body.show-help #world-container {
 #world.disable-pulse .block {
  /* no pulse effect */
  background-position: 0px -32px !important;
+}
+
+#world.use-transforms.disable-pulse .block .transform-sprite {
+ /* use-transform equivalent */
+ -webkit-transform: none !important;
 }
 
 #world.disable-sprites div {
@@ -730,6 +830,8 @@ body.show-help #world-container {
  display: none;
 }
 
+
+.block,
 .bad-guy,
 .ship-gunfire,
 .turret-gunfire,
@@ -740,7 +842,6 @@ body.show-help #world-container {
  -ms-transform: translate3d(0px, 0px, 0px);
  -moz-transform: translate3d(0px, 0px, 0px);
  -webkit-transform: translate3d(0px, 0px, 0px);
-
 }
 
 #footer {

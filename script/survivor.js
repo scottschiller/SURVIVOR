@@ -149,6 +149,13 @@ function Survivor() {
       // ?profile=1, ?profiling=1, whatever.
       PERFORMANCE_MODE = (window.location.toString().match(/profil/i)),
 
+      /**
+       * Experimental: translate3d() for block / world pulse effect, attempt at GPU compositing / reducing paints. Step-based keyframe animations for pulse effect, as well.
+       * Seems to perform worse, presumably due to doubled number of DOM elements (~1100) and thus expensive "recalculate style" work.
+       * Related screenshot: http://flic.kr/p/eHbgpf
+       */
+      USE_TRANSFORMS = (navigator.userAgent.match(/webkit/i)),
+
       DEFAULT_LIVES = 3,
       DEFAULT_SMARTBOMBS = 3,
       DEFAULT_HOME_ROW = 20,
@@ -269,14 +276,29 @@ function Survivor() {
 
   };
 
+  // special case: inner <div> for transform: translate3d() GPU-accelerated sprite animation.
+  var itemTemplate = document.createElement('div');
+  var innerNode;
+
+  if (USE_TRANSFORMS) { 
+    innerNode = document.createElement('div');
+    innerNode.className = 'transform-sprite';
+    itemTemplate.appendChild(innerNode);
+  }
+
   dom = {
 
-    gridItemTemplate: document.createElement('div'),
+    gridItemTemplate: itemTemplate,
     world: document.getElementById('world'),
     worldContainer: document.getElementById('world-container'),
     worldFragment: document.createDocumentFragment()
 
   };
+
+  // hack: append transforms if webkit, for now.
+  if (USE_TRANSFORMS) {
+    world.className = 'use-transforms';
+  }
 
   // for internal reference
   game = {
@@ -604,7 +626,7 @@ function Survivor() {
     type = oOptions.type;
     subType = oOptions.subType;
 
-    o = dom.gridItemTemplate.cloneNode(oNode);
+    o = dom.gridItemTemplate.cloneNode(true);
 
     o.style.left = (game.data.NODE_WIDTH * x) + 'px';
     o.style.top = (game.data.NODE_HEIGHT * y) + 'px';
@@ -759,7 +781,7 @@ function Survivor() {
 
         currentPhase = css['phase' + data.pulseCount];
 
-        if (!oldIE) {
+        if (!oldIE && !USE_TRANSFORMS) {
           utils.css.swap(game.dom.world, data.lastPhase, currentPhase);
         }
 
@@ -841,13 +863,24 @@ function Survivor() {
 
     function setPulseStage(nStage) {
 
+      var css = {
+        className: game.dom.world.className
+      };
+
       stopPulse();
 
       if (!nStage) {
         nStage = 0;
       }
 
+      // determine new pulse interval CSS
+      utils.css.remove(css, 'pulse-interval-' + data.pulseStage);
+      utils.css.add(css, 'pulse-interval-' + nStage);
+
       data.pulseStage = nStage;
+
+      // apply to the world (CSS animations)
+      game.dom.world.className = css.className;
 
       // TODO: clean up
 
