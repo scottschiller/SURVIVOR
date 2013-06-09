@@ -32,20 +32,26 @@
    */
  -->
  <link rel="stylesheet" href="css/survivor.css" />
+ <!-- see script/soundmanager2.js for full, commented version -->
  <script src="script/soundmanager2-nodebug-jsmin.js"></script>
  <script>
-  soundManager.url = 'swf/';
-  soundManager.useHighPerformance = true;
-  soundManager.flashVersion = 9;
-  soundManager.debugMode = false;
-  soundManager.wmode = 'opaque';
-  soundManager.bgColor = '#000000';
+  soundManager.setup({
+    url: 'swf/',
+    useHighPerformance: true,
+    flashVersion: 9,
+    wmode: 'opaque',
+    bgColor: '#000000'
+  });
+
   if (window.location.toString().match(/html5audio=1/i)) {
     // try at your own risk - playback may lag, etc.
-    soundManager.preferFlash = false;
+    soundManager.setup({
+      preferFlash: false
+    });
   }
  </script>
  <script src="script/survivor.js"></script>
+ <!-- on schillmania.com -->
  <script src="/common/stats.js"></script>
 </head>
 
