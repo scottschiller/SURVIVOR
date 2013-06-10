@@ -43,7 +43,7 @@
     bgColor: '#000000'
   });
 
-  if (window.location.toString().match(/html5audio=1/i)) {
+  if (window.location.href.match(/html5audio=1/i) || window.location.href.match(/file/i)) {
     // try at your own risk - playback may lag, etc.
     soundManager.setup({
       preferFlash: false

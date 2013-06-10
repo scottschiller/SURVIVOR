@@ -481,16 +481,10 @@ body.show-help #world-container {
 
 .ship-gunfire {
  position: absolute;
- /* initially, hide from view. */
- display: none;
- font-family: "verdana, arial, tahoma";
- font-size: 20px;
- font-weight: bold;
- text-align: center;
- width: 7px;
- height: 7px;
- line-height: 9px;
- overflow: hidden;
+ width: 6px;
+ height: 6px;
+ background: #fff;
+ border-radius: 100%;
 }
 
 .big-explosion {
@@ -507,7 +501,7 @@ body.show-help #world-container {
  position: absolute;
  width: 32px;
  height: 32px;
- display: none;
+ visibility: hidden;
 }
 
 .bad-guy .icon {
@@ -545,7 +539,7 @@ body.show-help #world-container {
  /* turret-gunfire.png */
  background: transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAABACAYAAAB7jnWuAAAAO0lEQVR42u3XsQkAQAgEwe+/ab8EBUWTmVzY7PABmWgScB8AANZQAAAwNcPdewECBAgQIEDAeoAvGaj6ZC38LpiJVU0AAAAASUVORK5CYII=) no-repeat 0px 0px;
  /* initially, hide. */
- display: none;
+ visibility: hidden;
 }
 
 .turret-gunfire.up,
@@ -616,54 +610,54 @@ body.show-help #world-container {
 
 /* translate3d-style GPU acceleration for sprites */
 
-#world.use-transforms .block {
+#world.use-experimental-transforms .block {
   /* no background here - move into an inner element */
 	background: transparent;
 }
 
 /* inner sprite element: this element gets the sprite and will be transformed, sliding within the container. */
 
-#world.use-transforms .block .transform-sprite {
+#world.use-experimental-transforms .block .transform-sprite {
  -webkit-transform: translate3d(0px, 0px, 0px);
 }
 
-#world.use-transforms.phase-1 .block .transform-sprite {
+#world.use-experimental-transforms.phase-1 .block .transform-sprite {
  -webkit-transform: translate3d(0px, -32px, 0px);
 }
 
-#world.use-transforms.phase-2 .block .transform-sprite {
+#world.use-experimental-transforms.phase-2 .block .transform-sprite {
  -webkit-transform: translate3d(0px, -64px, 0px);
 }
 
-#world.use-transforms.phase-3 .block .transform-sprite {
+#world.use-experimental-transforms.phase-3 .block .transform-sprite {
  -webkit-transform: translate3d(0px, -96px, 0px);
 }
 
-#world.use-transforms.phase-4 .block .transform-sprite {
+#world.use-experimental-transforms.phase-4 .block .transform-sprite {
  -webkit-transform: translate3d(0px, -128px, 0px);
 }
 
 /* step-based animations, too */
 
-#world.use-transforms.pulse-interval-0 .block .transform-sprite {
+#world.use-experimental-transforms.pulse-interval-0 .block .transform-sprite {
  -webkit-animation: pulse 2s steps(4, end) infinite;
  -moz-animation: pulse 2s steps(4, end) infinite;
  animation: pulse 2s steps(4, end) infinite;
 }
 
-#world.use-transforms.pulse-interval-1 .block .transform-sprite {
+#world.use-experimental-transforms.pulse-interval-1 .block .transform-sprite {
  -webkit-animation: pulse 1.467s steps(4, end) infinite;
  -moz-animation: pulse 1.467s steps(4, end) infinite;
  animation: pulse 1.467s steps(4, end) infinite;
 }
 
-#world.use-transforms.pulse-interval-2 .block .transform-sprite {
+#world.use-experimental-transforms.pulse-interval-2 .block .transform-sprite {
  -webkit-animation: pulse 0.933s steps(4, end) infinite;
  -moz-animation: pulse 0.933s steps(4, end) infinite;
  animation: pulse 0.933s steps(4, end) infinite;
 }
 
-#world.use-transforms.pulse-interval-3 .block .transform-sprite {
+#world.use-experimental-transforms.pulse-interval-3 .block .transform-sprite {
  -webkit-animation: pulse 0.4s steps(4, end) infinite;
  -moz-animation: pulse 0.4s steps(4, end) infinite;
  animation: pulse 0.4s steps(4, end) infinite;
@@ -706,7 +700,7 @@ body.show-help #world-container {
  background-position: 0px -32px !important;
 }
 
-#world.use-transforms.disable-pulse .block .transform-sprite {
+#world.use-experimental-transforms.disable-pulse .block .transform-sprite {
  /* use-transform equivalent */
  -webkit-transform: none !important;
 }
@@ -827,21 +821,28 @@ body.show-help #world-container {
  height: 32px;
  /* spaceball.png */
  background: transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAcCAYAAAAAwr0iAAAAgElEQVR42u2WQQqAMBAD+zjv4oP8hj/xffVacxkWA6HFQG4hO+1SaPuq89776GZVHoAHqikfB3AMeFml+fUBrmMbLXn2bABsER4gD1AsrA5A4DwAFNqvXJUHkID92VF/HqBYQIVVoAkAyKIqYB7g/w+Q3CtaH4BWEgCIfstZeYAH+iJJMw1O7SUAAAAASUVORK5CYII=) no-repeat 0px 0px;
- display: none;
+ visibility: hidden;
 }
 
-
-.block,
-.bad-guy,
-.ship-gunfire,
-.turret-gunfire,
-.spaceball,
-.big-explosion,
-#title-screen #title-header {
+#world.use-transform .block,
+#world.use-transform .bad-guy,
+#world.use-transform .ship-gunfire,
+#world.use-transform .turret,
+#world.use-transform .turret-gunfire,
+#world.use-transform .spaceball,
+#world.use-transform .big-explosion,
+#world.use-transform .ship-gunfire {
  /* GPU accelation? Don't mind if I do. */
  -ms-transform: translate3d(0px, 0px, 0px);
  -moz-transform: translate3d(0px, 0px, 0px);
  -webkit-transform: translate3d(0px, 0px, 0px);
+}
+
+#world.use-transform .turret.dead {
+ /* no more GPU for you */
+ -ms-transform: none;
+ -moz-transform: none;
+ -webkit-transform: none;
 }
 
 #footer {

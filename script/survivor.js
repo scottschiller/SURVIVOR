@@ -1,4 +1,4 @@
-/** @license
+﻿/** @license
  *
  * SURVIVOR: A HTML + CSS + JavaScript prototype
  * based on the Commodore 64 version of Survivor from 1983
@@ -130,6 +130,7 @@ if (window.console === undefined) {
 }
 
 var IS_MUTED = window.location.href.toString().match(/mute/i);
+var winloc = window.location.toString();
 
 function Survivor() {
 
@@ -144,17 +145,23 @@ function Survivor() {
       oldIE = navigator.userAgent.match(/msie 6/i),
 
       // adds debug elements to the grid, UI etc.
-      DEBUG_MODE = (window.location.toString().match(/debug/i)),
+      DEBUG_MODE = (winloc.match(/debug/i)),
 
       // ?profile=1, ?profiling=1, whatever.
-      PERFORMANCE_MODE = (window.location.toString().match(/profil/i)),
+      PERFORMANCE_MODE = (winloc.match(/profil/i)),
 
       /**
-       * Experimental: translate3d() for block / world pulse effect, attempt at GPU compositing / reducing paints. Step-based keyframe animations for pulse effect, as well.
-       * Seems to perform worse, presumably due to doubled number of DOM elements (~1100) and thus expensive "recalculate style" work.
+       * Chrome-specific GPU-accelerated positioning (vs .style.left + .style.top) and compositing / layer promotion
+       * Safari doesn't like this so much. #usetransform to enable, #notransform to disable.
+       */
+      USE_TRANSFORM = ((navigator.userAgent.match(/chrome/i) && !winloc.match(/notransform/i)) || winloc.match(/usetransform/i)),
+
+      /**
+       * Additional: translate3d() for block / world pulse effect, attempt at GPU compositing / reducing paints. Step-based keyframe animations for pulse effect, as well.
+       * Performs worse as of 06/2013, presumably due to doubled number of DOM elements (~1100) and thus expensive "recalculate style" work.
        * Related screenshot: http://flic.kr/p/eHbgpf
        */
-      USE_TRANSFORMS = (navigator.userAgent.match(/webkit/i)),
+      USE_EXPERIMENTAL_TRANSFORM = (winloc.match(/experimentaltransform/i)),
 
       DEFAULT_LIVES = 3,
       DEFAULT_SMARTBOMBS = 3,
@@ -280,10 +287,11 @@ function Survivor() {
   var itemTemplate = document.createElement('div');
   var innerNode;
 
-  if (USE_TRANSFORMS) { 
+  if (USE_EXPERIMENTAL_TRANSFORM) { 
     innerNode = document.createElement('div');
     innerNode.className = 'transform-sprite';
     itemTemplate.appendChild(innerNode);
+    world.className = 'use-transforms';
   }
 
   dom = {
@@ -294,11 +302,6 @@ function Survivor() {
     worldFragment: document.createDocumentFragment()
 
   };
-
-  // hack: append transforms if webkit, for now.
-  if (USE_TRANSFORMS) {
-    world.className = 'use-transforms';
-  }
 
   // for internal reference
   game = {
@@ -491,7 +494,7 @@ function Survivor() {
     } : null;
 
     // requestAnimationFrame is still somewhat slower in this case than an old-skool setInterval(). Not sure why.
-    if (getAnimationFrame && window.location.toString().match(/raf=1/i)) {
+    if (getAnimationFrame && winloc.match(/raf=1/i)) {
       console.log('preferring requestAnimationFrame for game loop');
     } else {
       getAnimationFrame = null;
@@ -781,7 +784,7 @@ function Survivor() {
 
         currentPhase = css['phase' + data.pulseCount];
 
-        if (!oldIE && !USE_TRANSFORMS) {
+        if (!oldIE && !USE_EXPERIMENTAL_TRANSFORM) {
           utils.css.swap(game.dom.world, data.lastPhase, currentPhase);
         }
 
@@ -1334,8 +1337,7 @@ function Survivor() {
 
       if (data.visible) {
         data.visible = false;
-        nodeParent.removeChild(o);
-        o.style.display = 'none';
+        o.style.visibility = 'hidden';
       }
 
     }
@@ -1344,8 +1346,7 @@ function Survivor() {
 
       if (!data.visible) {
         data.visible = true;
-        nodeParent.appendChild(o);
-        o.style.display = 'block';
+        o.style.visibility = 'visible';
       }
 
     }
@@ -1751,6 +1752,8 @@ function Survivor() {
 
         setRandomType();
 
+        nodeParent.appendChild(o);
+
       }
 
     }
@@ -1992,8 +1995,7 @@ function Survivor() {
       if (data.visible) {
         data.visible = false;
         if (nodeParent && o) {
-          nodeParent.removeChild(o);
-          o.style.display = 'none';
+          o.style.visibility = 'hidden';
         }
       }
 
@@ -2003,8 +2005,7 @@ function Survivor() {
 
       if (!data.visible) {
         data.visible = true;
-        nodeParent.appendChild(o);
-        o.style.display = 'block';
+        o.style.visibility = 'visible';
       }
 
     }
@@ -2027,8 +2028,17 @@ function Survivor() {
 
         if (game.objects.screen.isInView(location.col, location.row)) {
 
-          o.style.left = Math.max(0, Math.floor(x)) + 'px';
-          o.style.top = Math.max(0, Math.floor(y)) + 'px';
+
+          if (USE_TRANSFORM) {
+
+            o.style[features.transform.prop] = 'translate3d(' + Math.floor(x) + 'px, ' + Math.floor(y) + 'px, 0px)';
+
+          } else {
+
+            o.style.left = Math.max(0, Math.floor(x)) + 'px';
+            o.style.top = Math.max(0, Math.floor(y)) + 'px';
+
+          }
 
           show();
 
@@ -2217,7 +2227,7 @@ function Survivor() {
       startAttack();
 
       // append to DOM
-      // game.dom.worldFragment.appendChild(o);
+      game.dom.worldFragment.appendChild(o);
 
     }
 
@@ -2367,14 +2377,6 @@ function Survivor() {
         data.coords.y = y;
 
         // scroll the world.
-
-/*
-        if (is_firefox && features.transform.prop) {
-          game.dom.world.style[features.transform.prop] = 'translate(-' + x + 'px, -' + y + 'px)';
-        } else {
-          window.scrollTo(x, y);
-        }
-*/
 
         window.scrollTo(x, y);
 
@@ -4294,7 +4296,7 @@ function Survivor() {
       }
       data.visible = false;
       nodeParent.removeChild(o);
-      o.style.display = 'none';
+      o.style.visibility = 'hidden';
 
     }
 
@@ -4307,13 +4309,26 @@ function Survivor() {
 
       if (o) {
 
-        data.lastX = x;
-        data.lastY = y;
-
         location = game.objects.collision.xyToRowCol(x, y);
 
-        o.style.left = x + 'px';
-        o.style.top = y + 'px';
+        if (USE_TRANSFORM) {
+
+          o.style[features.transform.prop] = 'translate3d(' + Math.floor(x) + 'px, ' + Math.floor(y) + 'px, 0px)';
+
+        } else {
+
+          if (data.lastX !== x) {
+            o.style.left = x + 'px';
+          }
+
+          if (data.lastY !== y) {
+            o.style.top = y + 'px';
+          }
+
+        }
+
+        data.lastX = x;
+        data.lastY = y;
 
         if (location.col !== data.col || location.row !== data.row) {
 
@@ -4838,14 +4853,19 @@ function Survivor() {
         return false;
       }
 
+      if (data.lastX !== x) {
+        o.style.left = x + 'px';
+      }
+
+      if (data.lastY !== y) {
+        o.style.top = y + 'px';
+      }
+
       data.lastX = x;
       data.lastY = y;
 
       data.x = x;
       data.y = y;
-
-      o.style.left = x + 'px';
-      o.style.top = y + 'px';
 
       // console.log(deltaX, screenXAbs, screenW, screenWThird);
 
@@ -5082,8 +5102,8 @@ function Survivor() {
       }
 
       // for alignment with ship sprite...
-      var xOffset = 12;
-      var yOffset = 12;
+      var xOffset = 13;
+      var yOffset = 13;
 
       // create two new fire objects, on opposite axes.
 
@@ -5096,8 +5116,8 @@ function Survivor() {
         x: data.x + xOffset,
         y: data.y + yOffset,
         // TODO: Review w/h
-        w: 8,
-        h: 8
+        w: 7,
+        h: 7
       }));
 
       // mirror gunfire
@@ -5106,8 +5126,8 @@ function Survivor() {
         vY: yDir * -1,
         x: data.x + xOffset,
         y: data.y + yOffset,
-        w: 8,
-        h: 8
+        w: 7,
+        h: 7
       }));
 
     }
@@ -6140,8 +6160,7 @@ function Survivor() {
       if (data.visible) {
         data.visible = false;
         if (o && nodeParent) {
-          nodeParent.removeChild(o);
-          o.style.display = 'none';
+          o.style.visibility = 'hidden';
         }
       }
 
@@ -6152,8 +6171,7 @@ function Survivor() {
       if (!data.visible) {
         data.visible = true;
         if (o && nodeParent) {
-          nodeParent.appendChild(o);
-          o.style.display = 'block';
+          o.style.visibility = 'visible';
         }
       }
 
@@ -6161,7 +6179,7 @@ function Survivor() {
 
     function moveTo(x,y) {
 
-      var location;
+      var location, endX, endY;
 
       if (!data.active) {
         return false;
@@ -6178,8 +6196,19 @@ function Survivor() {
 
         if (game.objects.screen.isInView(location.col, location.row)) {
 
-          o.style.left = (data.turretX + x) + 'px';
-          o.style.top = (data.turretY + y) + 'px';
+          endX = data.turretX + x;
+          endY = data.turretY + y;
+
+          if (USE_TRANSFORM) {
+
+            o.style[features.transform.prop] = 'translate3d(' + endX + 'px, ' + endY + 'px, 0px)';
+
+          } else {
+
+            o.style.left = endX + 'px';
+            o.style.top = endY + 'px';
+
+          }
 
           show();
 
@@ -6385,6 +6414,8 @@ function Survivor() {
 
       // append to DOM
       // parentNode.appendChild(o);
+
+      nodeParent.appendChild(o);
 
     }
 
@@ -7794,9 +7825,9 @@ function Survivor() {
   };
 
   // user-provided map
-  if (window.location.toString().match(/mapData/)) {
+  if (winloc.match(/mapData/)) {
 
-    var str = decodeURI(window.location.toString());
+    var str = decodeURI(winloc);
 
     mapData = str.substr(str.indexOf('mapData')+8).split('/');
 
@@ -7897,12 +7928,6 @@ function Survivor() {
 
   function reset() {
 
-    // oh, what a hack! (destroy the world markup)
-
-    // TODO: Hide turret gunfire, which may barf when trying to remove nodes that can't be found after this point.
-
-    dom.world.innerHTML = '';
-
     // reset the maps
     objects.turretGunfireMap.reset();
     objects.shipGunfireMap.reset();
@@ -7961,7 +7986,7 @@ function Survivor() {
 
     if (o) {
 
-      if (window.location.toString().match(/mapData/i)) {
+      if (winloc.match(/mapData/i)) {
 
         // assign the link including the mapData, replacing MAP_FREE_SPACE_CHAR with MAP_ALT_FREE_SPACE_CHAR
         o.href = 'editor.html#mapData=' + survivor.mapData.join('/').replace(/\s/g, MAP_ALT_FREE_SPACE_CHAR);
@@ -8125,6 +8150,12 @@ function Survivor() {
 
     createSpaceBalls();
 
+    // shall we use GPU acceleration tricks based on Chrome's DevTools?
+    if (USE_TRANSFORM) {
+      console.log('using Chrome-specific CSS3 transforms for GPU acceleration');
+      utils.css.add(game.dom.world, 'use-transform');
+    }
+
     // append fragment containing everything to DOM
 
     dom.world.appendChild(dom.worldFragment);
@@ -8244,7 +8275,7 @@ function go_go_go() {
     startGame();
 
     // and show the "tweeter" link, encouraging creators to share (maybe)
-    if (tweeter && !window.location.href.match(/temp/i)) {
+    if (tweeter && !winloc.match(/temp/i)) {
 
       tweeter.style.display = 'inline';
 
@@ -8258,7 +8289,7 @@ function go_go_go() {
             mapData,
             xhr;
 
-        str = decodeURI(window.location.toString());
+        str = decodeURI(winloc);
 
         mapData = str.substr(str.indexOf('mapData')+8);
 
