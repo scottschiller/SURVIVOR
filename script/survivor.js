@@ -291,7 +291,7 @@ function Survivor() {
     innerNode = document.createElement('div');
     innerNode.className = 'transform-sprite';
     itemTemplate.appendChild(innerNode);
-    world.className = 'use-transforms';
+    world.className = 'use-experimental-transforms';
   }
 
   dom = {
