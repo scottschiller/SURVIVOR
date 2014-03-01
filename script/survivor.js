@@ -6,7 +6,7 @@
  * http://schillmania.com/survivor/
  * http://www.schillmania.com/content/entries/2012/survivor-c64-html-remake/
  * http://www.flickr.com/photos/schill/sets/72157628885315581/
- * http://github.com/scottschiller/
+ * https://github.com/scottschiller/SURVIVOR
  *
  * Scott Schiller wrote this beginning in December 2011, while on a plane to Hawaii.
  * Code provided under the Attribution-NonCommercial 3.0 Unported (CC BY-NC 3.0) License:

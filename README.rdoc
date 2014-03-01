@@ -1,8 +1,9 @@
 == SURVIVOR: A HTML + CSS + JavaScript prototype based on the Commodore 64 version of Survivor from 1983
 
     * http://schillmania.com/survivor/
+    * http://www.schillmania.com/content/entries/2012/survivor-c64-html-remake/
     * http://www.flickr.com/photos/schill/sets/72157628885315581/
-    * http://github.com/scottschiller/
+    * https://github.com/scottschiller/SURVIVOR
 
 == ABOOT
 
