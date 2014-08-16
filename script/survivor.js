@@ -17,6 +17,8 @@
 /*global window, console, document, navigator, setTimeout, setInterval, clearInterval, soundManager */
 /*jslint vars: true, regexp: true, sloppy: true, white: true, nomen: true, plusplus: true, todo: true */
 
+// 8.16.2014: The jslint gods have been re-appeased. Added strict mode.
+
 // 5.25.2013: The jslint gods have been appeased.
 
 /**
@@ -120,6 +122,8 @@ var survivor;
 
 (function(window) {
 
+"use strict";
+
 if (window.console === undefined) {
   // hax
   window.console = {
@@ -136,9 +140,9 @@ function Survivor() {
 
   // internal reference
   var game,
-      data,
-      dom,
-      objects,
+      gameData,
+      gameDom,
+      gameObjects,
       mapTypes,
       mapData,
       isIE = navigator.userAgent.match(/msie/i),
@@ -246,7 +250,7 @@ function Survivor() {
       // (but causes some visual glitches in Webkit)
       // is_firefox = !!(navigator.userAgent.match(/firefox/i));
 
-  objects = {
+  gameObjects = {
 
     // instances of controllers, major objects and so forth
     baseController: null,
@@ -271,7 +275,7 @@ function Survivor() {
 
   };
 
-  data = {
+  gameData = {
 
     map: [],
     NODE_WIDTH: 32,
@@ -287,14 +291,7 @@ function Survivor() {
   var itemTemplate = document.createElement('div');
   var innerNode;
 
-  if (USE_EXPERIMENTAL_TRANSFORM) { 
-    innerNode = document.createElement('div');
-    innerNode.className = 'transform-sprite';
-    itemTemplate.appendChild(innerNode);
-    world.className = 'use-experimental-transforms';
-  }
-
-  dom = {
+  gameDom = {
 
     gridItemTemplate: itemTemplate,
     world: document.getElementById('world'),
@@ -303,12 +300,19 @@ function Survivor() {
 
   };
 
+  if (USE_EXPERIMENTAL_TRANSFORM) { 
+    innerNode = document.createElement('div');
+    innerNode.className = 'transform-sprite';
+    itemTemplate.appendChild(innerNode);
+    gameDom.world.className = 'use-experimental-transforms';
+  }
+
   // for internal reference
   game = {
 
-    data: data,
-    dom: dom,
-    objects: objects
+    data: gameData,
+    dom: gameDom,
+    objects: gameObjects
 
   };
 
@@ -511,7 +515,7 @@ function Survivor() {
     }
 
     // note local scope.
-    var features = {
+    var localFeatures = {
 
       audio: false, // set later via SM2
 
@@ -542,12 +546,12 @@ function Survivor() {
 
     };
 
-    features.transform.prop = (
-      features.transform.w3 || 
-      features.transform.moz ||
-      features.transform.webkit ||
-      features.transform.ie ||
-      features.transform.opera
+    localFeatures.transform.prop = (
+      localFeatures.transform.w3 || 
+      localFeatures.transform.moz ||
+      localFeatures.transform.webkit ||
+      localFeatures.transform.ie ||
+      localFeatures.transform.opera
     );
 
     function attempt(style) {
@@ -563,33 +567,33 @@ function Survivor() {
 
     }
 
-    if (features.transform.prop) {
+    if (localFeatures.transform.prop) {
 
       // try to derive the rotate/3D support.
-      transform = features.transform.prop;
+      transform = localFeatures.transform.prop;
       styles = {
         css_2d: 'rotate(0deg)',
         css_3d: 'rotate3d(0,0,0,0deg)'
       };
 
       if (attempt(styles.css_3d)) {
-        features.rotate.has3D = true;
+        localFeatures.rotate.has3D = true;
         prop = 'rotate3d';
       } else if (attempt(styles.css_2d)) {
         prop = 'rotate';
       }
 
-      // soundManager._wD('Has 3D rotate: '+features.rotate.has3D);
+      // soundManager._wD('Has 3D rotate: '+localFeatures.rotate.has3D);
 
-      features.rotate.prop = prop;
+      localFeatures.rotate.prop = prop;
 
     }
 
-    console.log('user agent feature test:', features);
+    console.log('user agent feature test:', localFeatures);
 
-    console.log('requestAnimationFrame() is' + (features.getAnimationFrame ? '' : ' not') + ' available');
+    console.log('requestAnimationFrame() is' + (localFeatures.getAnimationFrame ? '' : ' not') + ' available');
 
-    return features;
+    return localFeatures;
 
   }());
 
@@ -621,15 +625,15 @@ function Survivor() {
 
     var o,
         x, y,
-        type, subType,
-        oNode = oOptions.node;
+        type, subType/*,
+        oNode = oOptions.node*/;
 
     x = oOptions.x;
     y = oOptions.y;
     type = oOptions.type;
     subType = oOptions.subType;
 
-    o = dom.gridItemTemplate.cloneNode(true);
+    o = game.dom.gridItemTemplate.cloneNode(true);
 
     o.style.left = (game.data.NODE_WIDTH * x) + 'px';
     o.style.top = (game.data.NODE_HEIGHT * y) + 'px';
@@ -644,20 +648,20 @@ function Survivor() {
 
     var i, j, k, l;
 
-    for (i=0, j=objects.spaceBalls.length; i<j; i++) {
-      objects.spaceBalls[i].animate();
+    for (i=0, j=game.objects.spaceBalls.length; i<j; i++) {
+      game.objects.spaceBalls[i].animate();
     }
 
     // also do "own" collision check
-    for (i=0, j=objects.spaceBalls.length; i<j; i++) {
+    for (i=0, j=game.objects.spaceBalls.length; i<j; i++) {
 
-      for (k=0, l=objects.spaceBalls.length; k<l; k++) {
+      for (k=0, l=game.objects.spaceBalls.length; k<l; k++) {
 
         // don't compare against self...
-        if (k !== i && objects.spaceBalls[i].data.row === objects.spaceBalls[k].data.row && objects.spaceBalls[i].data.col === objects.spaceBalls[k].data.col) {
+        if (k !== i && game.objects.spaceBalls[i].data.row === game.objects.spaceBalls[k].data.row && game.objects.spaceBalls[i].data.col === game.objects.spaceBalls[k].data.col) {
 
           // console.log('spaceball vs. spaceball!');
-          objects.spaceBalls[i].bounce();
+          game.objects.spaceBalls[i].bounce();
           break;
 
         }
@@ -866,7 +870,7 @@ function Survivor() {
 
     function setPulseStage(nStage) {
 
-      var css = {
+      var pulseCSS = {
         className: game.dom.world.className
       };
 
@@ -877,13 +881,13 @@ function Survivor() {
       }
 
       // determine new pulse interval CSS
-      utils.css.remove(css, 'pulse-interval-' + data.pulseStage);
-      utils.css.add(css, 'pulse-interval-' + nStage);
+      utils.css.remove(pulseCSS, 'pulse-interval-' + data.pulseStage);
+      utils.css.add(pulseCSS, 'pulse-interval-' + nStage);
 
       data.pulseStage = nStage;
 
       // apply to the world (CSS animations)
-      game.dom.world.className = css.className;
+      game.dom.world.className = pulseCSS.className;
 
       // TODO: clean up
 
@@ -1068,7 +1072,7 @@ function Survivor() {
 
   }
 
-  objects.blockController = new BlockController();
+  gameObjects.blockController = new BlockController();
 
   var blockCounter = 0;
 
@@ -1156,7 +1160,7 @@ function Survivor() {
       if (!data.dead && data.power) {
 
         data.power--;
-        objects.gameController.addPoints(data.points);
+        game.objects.gameController.addPoints(data.points);
         animationStart();
 
       }
@@ -1198,7 +1202,7 @@ function Survivor() {
 
       }
 
-      dom.worldFragment.appendChild(o);
+      game.dom.worldFragment.appendChild(o);
 
     }
 
@@ -1530,7 +1534,7 @@ function Survivor() {
       // explosion effect/noise
       if (!data.dead && !data.exploding) {
 
-        objects.gameController.addPoints(data.points);
+        game.objects.gameController.addPoints(data.points);
 
         if (features.audio) {
           incrementAudioPitch();
@@ -1925,7 +1929,7 @@ function Survivor() {
 
   }
 
-  objects.badGuyController = new BadGuyController();
+  game.objects.badGuyController = new BadGuyController();
 
   spaceBallTemplate = document.createElement('div');
   spaceBallTemplate.className = 'spaceball';
@@ -5955,7 +5959,7 @@ function Survivor() {
 
       }
 
-      dom.worldFragment.appendChild(o);
+      game.dom.worldFragment.appendChild(o);
 
     }
 
@@ -6750,7 +6754,7 @@ function Survivor() {
 
       createTurretGunfire();
 
-      dom.worldFragment.appendChild(o);
+      game.dom.worldFragment.appendChild(o);
 
     }
 
@@ -7310,14 +7314,14 @@ function Survivor() {
 
       focus: function() {
 
-        objects.gameLoop.resume();
+        game.objects.gameLoop.resume();
 
       },
 
       blur: function() {
 
-        objects.keyboardMonitor.releaseAll();
-        objects.gameLoop.pause();
+        game.objects.keyboardMonitor.releaseAll();
+        game.objects.gameLoop.pause();
 
       }
 
@@ -7430,7 +7434,7 @@ function Survivor() {
 
         oStats.innerHTML = [
           '<br>',
-          '<p>Your score: ' + objects.gameController.getScore() + ' points</p>',
+          '<p>Your score: ' + game.objects.gameController.getScore() + ' points</p>',
           '<br>',
           '<p>Destruction report:</p>',
           '<div class="fixed"><div class="icon type-2 block"></div> Blocks: ' + statsData.block + '</div>',
@@ -7458,7 +7462,7 @@ function Survivor() {
 
           survivor.reset();
 
-          objects.gameLoop.resume();
+          game.objects.gameLoop.resume();
 
         };
         
@@ -7762,14 +7766,14 @@ function Survivor() {
         spaceBallCount = DEFAULT_SPACEBALLS,
         freeSpaces = [],
         location,
-        rows = data.map.length,
-        cols = data.map[0].length;
+        rows = game.data.map.length,
+        cols = game.data.map[0].length;
 
     // check for space characters in the map character data.
     // these are safe spaces to occupy.
     for (i=0, j=cols; i<j; i++) {
       for (k=0, l=rows; k<l; k++) {
-        if (objects.mapData[k][i] === MAP_FREE_SPACE_CHAR || objects.mapData[k][i] === MAP_ALT_FREE_SPACE_CHAR) {
+        if (game.objects.mapData[k][i] === MAP_FREE_SPACE_CHAR || game.objects.mapData[k][i] === MAP_ALT_FREE_SPACE_CHAR) {
           freeSpaces.push({
             row: k,
             col: i
@@ -7790,9 +7794,9 @@ function Survivor() {
       // x.style.background = '#006600';
       for (i=0, j=freeSpaces.length; i<j; i++) {
         tmp = x.cloneNode(false);
-        tmp.style.left = (freeSpaces[i].col * data.NODE_WIDTH) + 'px';
-        tmp.style.top = (freeSpaces[i].row * data.NODE_HEIGHT) + 'px';
-        dom.worldFragment.appendChild(tmp);
+        tmp.style.left = (freeSpaces[i].col * game.data.NODE_WIDTH) + 'px';
+        tmp.style.top = (freeSpaces[i].row * game.data.NODE_HEIGHT) + 'px';
+        game.dom.worldFragment.appendChild(tmp);
       }
 
     }
@@ -7802,7 +7806,7 @@ function Survivor() {
       // choose a random location...
       location = parseInt(Math.random()*freeSpaces.length, 10);
 
-      objects.spaceBalls.push(new SpaceBall(freeSpaces[location]));
+      game.objects.spaceBalls.push(new SpaceBall(freeSpaces[location]));
 
       // and remove this item from the array (since it's now occupied)
       freeSpaces.splice(location, 1);
@@ -7842,7 +7846,7 @@ function Survivor() {
 
   }
 
-  objects.mapData = mapData;
+  game.objects.mapData = mapData;
 
   function createGrid() {
 
@@ -7873,9 +7877,9 @@ function Survivor() {
             'y': i
           }));
 
-        } else if (objects.baseController.isBaseItem(char)) {
+        } else if (game.objects.baseController.isBaseItem(char)) {
 
-          gridItems[i].push(objects.baseController.addBaseItem(char, k, i));
+          gridItems[i].push(game.objects.baseController.addBaseItem(char, k, i));
 
         } else {
 
@@ -7887,7 +7891,7 @@ function Survivor() {
 
     }
 
-    objects.baseController.findActiveBases();
+    game.objects.baseController.findActiveBases();
 
     // set world dimensions
     game.data.world_width = (game.data.NODE_WIDTH * mapData[0].length) + 1;
@@ -7898,25 +7902,25 @@ function Survivor() {
     game.data.world_rows = mapData.length - 1;
 
     // apply to DOM
-    dom.world.style.width = game.data.world_width + 'px';
-    dom.world.style.height = game.data.world_height + 'px';
+    game.dom.world.style.width = game.data.world_width + 'px';
+    game.dom.world.style.height = game.data.world_height + 'px';
 
     console.log('world set to ' + game.data.world_width + ' x ' + game.data.world_height);
 
     // reset the window scroll, if any (may be remembered from last time)
-    objects.screen.moveTo(0,0);
+    game.objects.screen.moveTo(0,0);
 
     return gridItems;
 
   }
 
   function createShip() {
-    objects.ship = new Ship();
-    objects.ship.init();
+    game.objects.ship = new Ship();
+    game.objects.ship.init();
   }
 
   function makeRandomBadGuy(force) {
-    var isActive = objects.gameLoop.isActive();
+    var isActive = game.objects.gameLoop.isActive();
     if ((Math.random() < 0.75 || force) && isActive) {
       console.log('makeRandomBadGuy()');
       game.objects.badGuyController.createBadGuy();
@@ -7929,10 +7933,10 @@ function Survivor() {
   function reset() {
 
     // reset the maps
-    objects.turretGunfireMap.reset();
-    objects.shipGunfireMap.reset();
-    objects.badGuyMap.reset();
-    objects.spaceBallMap.reset();
+    game.objects.turretGunfireMap.reset();
+    game.objects.shipGunfireMap.reset();
+    game.objects.badGuyMap.reset();
+    game.objects.spaceBallMap.reset();
 
     // reset and re-append objects to the grid as needed
 
@@ -7974,7 +7978,7 @@ function Survivor() {
 
     game.objects.ship.reset();
 
-    objects.gameLoop.resume();
+    game.objects.gameLoop.resume();
 
     console.log('game reset complete');
 
@@ -8004,7 +8008,7 @@ function Survivor() {
 
   function assignHelpLink() {
 
-    var o = document.getElementById('help');
+    var oHelp = document.getElementById('help');
 
     function mouseDownHandler(e) {
 
@@ -8040,9 +8044,9 @@ function Survivor() {
 
     }
 
-    if (o) {
+    if (oHelp) {
 
-      o.onmousedown = mouseDownHandler;
+      oHelp.onmousedown = mouseDownHandler;
 
       // and get the help screen, too
       document.getElementById('help-screen').onclick = mouseDownHandler;
@@ -8109,34 +8113,34 @@ function Survivor() {
 
   function init() {
 
-    objects.gameLoop = new GameLoop();
+    game.objects.gameLoop = new GameLoop();
 
     if (soundManager.ok() && !IS_MUTED) {
       initAudio();
     }
 
-    objects.collision = new Collision();
+    game.objects.collision = new Collision();
 
-    objects.screen = new Screen();
+    game.objects.screen = new Screen();
 
     console.log('creating BaseController()...');
 
-    objects.baseController = new BaseController();
-    objects.baseController.init();
+    game.objects.baseController = new BaseController();
+    game.objects.baseController.init();
 
     console.log('calling createGrid()');
 
-    data.map = createGrid();
+    game.data.map = createGrid();
 
-    objects.screen.init();
+    game.objects.screen.init();
 
-    objects.statsController = new StatsController();
+    game.objects.statsController = new StatsController();
 
     // 2D array tracking references to moving objects
-    objects.turretGunfireMap = new ObjectMap();
-    objects.shipGunfireMap = new ObjectMap();
-    objects.badGuyMap = new ObjectMap();
-    objects.spaceBallMap = new ObjectMap();
+    game.objects.turretGunfireMap = new ObjectMap();
+    game.objects.shipGunfireMap = new ObjectMap();
+    game.objects.badGuyMap = new ObjectMap();
+    game.objects.spaceBallMap = new ObjectMap();
 
     console.log('creating ship');
 
@@ -8158,40 +8162,40 @@ function Survivor() {
 
     // append fragment containing everything to DOM
 
-    dom.world.appendChild(dom.worldFragment);
+    game.dom.world.appendChild(game.dom.worldFragment);
 
     console.log('world created');
 
     // position ship
     // hack - otherwise, window scroll doesn't quite exist yet or something and doesn't get picked up.
     window.setTimeout(function() {
-      objects.ship.setDefaultPosition();
+      game.objects.ship.setDefaultPosition();
       game.objects.ship.findSafeRespawnLocation();
     }, 20);
 
     console.log('keyboard init');
 
-    objects.keyboardMonitor = new KeyboardMonitor();
-    objects.keyboardMonitor.init();
+    game.objects.keyboardMonitor = new KeyboardMonitor();
+    game.objects.keyboardMonitor.init();
 
-    objects.focusMonitor = new FocusMonitor();
-    objects.focusMonitor.init();
+    game.objects.focusMonitor = new FocusMonitor();
+    game.objects.focusMonitor.init();
 
     game.objects.levelEndSequence = new LevelEndSequence({
       node: document.getElementById('level-end-sequence')
     });
 
-    objects.smartbombController = new SmartbombController();
+    game.objects.smartbombController = new SmartbombController();
 
-    objects.gameController = new GameController();
-    objects.gameController.init();
+    game.objects.gameController = new GameController();
+    game.objects.gameController.init();
 
     assignRemixLink();
 
     assignHelpLink();
 
     // start game loop
-    objects.gameLoop.init();
+    game.objects.gameLoop.init();
 
   }
 
