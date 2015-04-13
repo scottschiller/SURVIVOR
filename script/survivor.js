@@ -8416,6 +8416,18 @@ function go_go_go() {
 
 }
 
+if (navigator.userAgent.match(/safari/i) && navigator.platform.match(/macIntel/i) && navigator.userAgent.match(/Version\/[7|8]/i) && !window.location.toString().match(/html5audio/i)) {
+  // https://bugs.webkit.org/show_bug.cgi?id=116145
+  // looks like it will be fixed in a future release. try #html5audio=1 in URL to override/test.
+  if (window.console && console.log) {
+    console.log('Preferring Flash for audio due to Safari 7 + 8 HTML5 audio performance bug. https://bugs.webkit.org/show_bug.cgi?id=116145');
+  }
+  soundManager.setup({
+    preferFlash: true,
+    // needed for good performance in Safari, otherwise multiShot lags a bit.
+    useHighPerformance: true
+  });
+}
 if (!window.location.protocol.match(/http/i) || document.domain.match(/schillmania\.com/i)) {
 
   soundManager.onready(function() {
