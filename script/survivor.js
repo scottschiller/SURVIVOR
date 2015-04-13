@@ -8425,7 +8425,19 @@ if (navigator.userAgent.match(/safari/i) && navigator.platform.match(/macIntel/i
   soundManager.setup({
     preferFlash: true,
     // needed for good performance in Safari, otherwise multiShot lags a bit.
-    useHighPerformance: true
+    useHighPerformance: true,
+    onready: function() {
+      // if 100% HTML5, disable because performance will suck.
+      if (soundManager.html5Only) {
+        if (window.console && console.log) {
+          console.log('SM2 loaded in 100% HTML5 mode, disabling audio so game performance is not impacted.');
+        }
+        // hack around volume for now
+        // soundManager.defaultOptions.volume = 0;
+        // edge case: diable() doesn't seem to work within onready(), heh.
+        window.setTimeout(soundManager.disable, 1500);
+      }
+    }
   });
 }
 if (!window.location.protocol.match(/http/i) || document.domain.match(/schillmania\.com/i)) {
