@@ -832,10 +832,16 @@ body.show-help #world-container {
 #world.use-transform .spaceball,
 #world.use-transform .big-explosion,
 #world.use-transform .ship-gunfire {
- /* GPU accelation? Don't mind if I do. */
+ /**
+  * GPU accelation? Don't mind if I do.
+  * 04/2015 update: browsers are smart enough to optimize this shiz automagically.
+  * Forcing 500+ elements to individual layers can make things worse.
+ */
+ /*
  -ms-transform: translate3d(0px, 0px, 0px);
  -moz-transform: translate3d(0px, 0px, 0px);
  -webkit-transform: translate3d(0px, 0px, 0px);
+ */
 }
 
 #world.use-transform .turret.dead {
