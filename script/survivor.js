@@ -8434,8 +8434,8 @@ if (navigator.userAgent.match(/safari/i) && navigator.platform.match(/macIntel/i
         }
         // hack around volume for now
         // soundManager.defaultOptions.volume = 0;
-        // edge case: diable() doesn't seem to work within onready(), heh.
-        window.setTimeout(soundManager.disable, 1500);
+        // edge case: disable() doesn't seem to work within onready(), heh.
+        window.setTimeout(soundManager.disable, 500);
       }
     }
   });
