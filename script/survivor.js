@@ -856,7 +856,8 @@ function Survivor() {
 
         currentPhase = css['phase' + data.pulseCount];
 
-        if (!oldIE && !USE_EXPERIMENTAL_TRANSFORM) {
+        // only include experimental check if using className changes vs. CSS animation.
+        if (!oldIE /*&& !USE_EXPERIMENTAL_TRANSFORM*/) {
           utils.css.swap(game.dom.world, data.lastPhase, currentPhase);
         }
 
