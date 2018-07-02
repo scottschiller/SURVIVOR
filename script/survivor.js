@@ -317,9 +317,10 @@ function Survivor() {
 
       /**
        * Chrome-specific GPU-accelerated positioning (vs .style.left + .style.top) and compositing / layer promotion
-       * Safari doesn't like this so much. #usetransform to enable, #notransform to disable.
+       * Safari didn't like this so much back in 2012, now enabled by default.
+       * Explicit override: #notransform to disable.
        */
-      USE_TRANSFORM = ((navigator.userAgent.match(/chrome/i) && !winloc.match(/notransform/i)) || winloc.match(/usetransform/i)),
+      USE_TRANSFORM = (!winloc.match(/notransform/i)),
 
       /**
        * Additional: translate3d() for block / world pulse effect, attempt at GPU compositing / reducing paints. Step-based keyframe animations for pulse effect, as well.
