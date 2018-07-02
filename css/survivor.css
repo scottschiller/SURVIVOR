@@ -220,6 +220,40 @@ body {
  background: transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAmEAAABkAgMAAACzyQ9CAAAACVBMVEUAAAAAAAD///+D3c/SAAAAAXRSTlMAQObYZgAAAAFiS0dEAmYLfGQAAAAJcEhZcwAACxMAAAsTAQCanBgAAAAidEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVAgb24gYSBNYWOHqHdDAAADBElEQVRo3u2bTXLkIAyFGxXZs5n7cIRZJKecWcwRfJ9svI+rmGn/DcYWehZQ1VWBRZLqVj8/xIcsnMR8PF5zfNLjVUd31p11Z93ZvWHnr+F39NIPv7zw/L69ub22j7efh/e4OE7r3/j6k+gk2kvOptszmopzMrI6U7Sa423dUOxsYHVC5GzQCutHyOgMu7OgXgz9mDI64+5sKlAuwywDGmnnH6pglgGN1MwMVTDjQSP19McqmPGgkRqZqQpmPGiknn2oghkPGumJGapgxoJGNcp574K6M6g/2/snacR9FjfMx7Eny2mlvVyk3VezO+vOurPurDvrzrqzb92fff56QI3aHtdgJNpU9XzbcjWnl3UWXncH4Odb39CWn50ZHWimoTGz5syrQLONK8bTmVOB5ho6c6szqwKtMWazMxVorTFb9qYGtNaYLc40oLXGbHGmAa01Zoszo0ShJWbrPcDrUGja/1BzaMr8vW1/T5J7LjYn+n37xWTcV82fTl++HZNoV+lpB6AOIjGl3fYZsRHY0iO07W3lc8AElEEkpjRn5vRz2G8dno3Px1xoU0Ga/l9mWFfLZIpyPuasXbqaboNo4KscElPnvOkjZOw6y5Cpi0jMWbs0ZxtEOYSQmDo5c3EBWCHKIoTEnLTVORuPEGURQmJO2sX1bLnSVxYhJKbKatq4bBigZ0NiTtrl9wAP9GxITI2cmUNT7oCeDYlJtctzZoGjARJz8RmuJxOelQ0+XR9/7PGen18fx5krzDL6g1fmzB96LQ8g5GHMdu0KXZADEHIgZoU7YLnOlELkABgdrk3X+TQ3TpdGEQNUOGJEfO50aY9neQ8gxO8ETpuYxLsbp0uniJErHEHXcexpiJuLNF8rapOY9wsUjLz+EiNG1CaEZwPUoLsxYoUjZH9b4UGQAypVGuMkbUJqolSFrCJGrHCE3Eek1t0oYsQqSGyTl+up3Gk6yA3RiDst1iagX5Fvdk4RI1VBAno8Jz50scAN0V5Wb17b9P/Euj26s+6sO+vOurPW4y/KjsjB18CxHAAAAABJRU5ErkJggg==) no-repeat 50% 50%;
 }
 
+#title-screen .marquee,
+#title-screen .marquee-text {
+  /*
+   * "The <marquee> element is not valid according to the HTML or XHTML specifications. Page authors concerned with validation should not use this tag."
+   * https://developer.mozilla.org/en/HTML/Element/marquee
+   * So instead, we'll play dirty with CSS animations. :D
+   */
+  position: relative;
+  display: block;
+}
+
+#title-screen .marquee {
+  overflow: hidden;
+  /* fix a few display things */
+  width: 46em;
+  /* center underneath logo */
+  margin-left: 1em;
+}
+
+#title-screen .marquee .marquee-text {
+  width: 100%;
+  /* undo defaults */
+  text-align: left;
+  /* force one line */
+  white-space: nowrap;
+  /* ensure it's at least this long. */
+  min-width: 160em;
+  /*
+   * message is 110 characters in length; 160 will scroll it off the left end entirely. 
+   * animation will start with an offset so it scrolls in from the right.
+   */
+  animation: marquee 20s steps(160, end) infinite;
+}
+
 #help-screen,
 #game-over-screen,
 #level-passed-screen {
@@ -805,6 +839,16 @@ body.show-help #world-container {
  -webkit-transform: translate3d(0px, 0px, 0px);
  */
 }
+
+@keyframes marquee {
+  from {
+    text-indent: 50em;
+  }
+  to {
+    text-indent: -110em;
+  }
+}
+
 
 #world.use-transform .turret.dead {
  /* no more GPU for you */
