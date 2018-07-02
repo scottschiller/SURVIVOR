@@ -136,6 +136,167 @@ if (window.console === undefined) {
 var IS_MUTED = window.location.href.toString().match(/mute/i);
 var winloc = window.location.toString();
 
+var utils = {
+
+  array: (function() {
+
+    function compare(property) {
+
+      var result;
+
+      return function(a, b) {
+
+        if (a[property] < b[property]) {
+          result = -1;
+        } else if (a[property] > b[property]) {
+          result = 1;
+        } else {
+          result = 0;
+        }
+        return result;
+      };
+
+    }
+
+    function shuffle(array) {
+
+      // Fisher-Yates shuffle algo
+
+      var i, j, temp;
+
+      for (i = array.length - 1; i > 0; i--) {
+        j = Math.floor(Math.random() * (i + 1));
+        temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+      }
+
+      return array;
+
+    }
+
+    return {
+      compare: compare,
+      shuffle: shuffle
+    };
+
+  }()),
+
+  css: (function() {
+
+    function hasClass(o, cStr) {
+
+      // modern
+      if (o && o.classList) {
+        return o.classList.contains(cStr);
+      }
+      // legacy
+      return (o.className !== undefined ? new RegExp('(^|\\s)' + cStr + '(\\s|$)').test(o.className) : false);
+
+    }
+
+    function addClass(o, cStr) {
+
+      if (o && o.classList) {
+        o.classList.add(cStr);
+        return;
+      }
+
+      if (!o || !cStr || hasClass(o, cStr)) return;
+      o.className = (o.className ? o.className + ' ' : '') + cStr;
+
+    }
+
+    function removeClass(o, cStr) {
+
+      if (o && o.classList) {
+        o.classList.remove(cStr);
+        return;
+      }
+
+      if (!o || !cStr || !hasClass(o, cStr)) return;
+      o.className = o.className.replace(new RegExp('( ' + cStr + ')|(' + cStr + ')', 'g'), '');
+
+    }
+
+    function swapClass(o, cStr1, cStr2) {
+
+      if (o && o.classList) {
+        if (cStr1 !== undefined && cStr1 !== null && cStr1.length) o.classList.remove(cStr1);
+        if (cStr2 !== undefined && cStr2 !== null && cStr2.length) o.classList.add(cStr2);
+        return;
+      }
+
+      var tmpClass = {
+        className: o.className
+      };
+
+      removeClass(tmpClass, cStr1);
+      addClass(tmpClass, cStr2);
+
+      o.className = tmpClass.className;
+
+    }
+
+    function toggleClass(o, cStr) {
+
+      (hasClass(o, cStr) ? removeClass : addClass)(o, cStr);
+
+    }
+
+    return {
+      has: hasClass,
+      add: function(o, className) {
+        // accept space-delimited classNames, but each item
+        // needs to be added via o.classNames.add() one at a time.
+        if (!className) return;
+        var classNames = className.split(' ');
+        for (var i = 0, j = classNames.length; i < j; i++) {
+          addClass(o, classNames[i]);
+        }
+      },
+      remove: removeClass,
+      swap: swapClass,
+      toggle: toggleClass
+    };
+
+  }()),
+
+  events: (function() {
+
+    var add, remove, preventDefault;
+
+    add = (window.addEventListener !== undefined ? function(o, evtName, evtHandler) {
+      return o.addEventListener(evtName, evtHandler, false);
+    } : function(o, evtName, evtHandler) {
+      o.attachEvent('on' + evtName, evtHandler);
+    });
+
+    remove = (window.removeEventListener !== undefined ? function(o, evtName, evtHandler) {
+      return o.removeEventListener(evtName, evtHandler, false);
+    } : function(o, evtName, evtHandler) {
+      return o.detachEvent('on' + evtName, evtHandler);
+    });
+
+    preventDefault = function(e) {
+      if (e.preventDefault) {
+        e.preventDefault();
+      } else {
+        e.returnValue = false;
+        e.cancelBubble = true;
+      }
+    };
+
+    return {
+      add: add,
+      preventDefault: preventDefault,
+      remove: remove
+    };
+
+  }())
+
+};
+
 function Survivor() {
 
   // internal reference
@@ -374,100 +535,6 @@ function Survivor() {
       }
 
     }
-
-  };
-
-  var utils;
-
-  utils = {
-
-    css: (function() {
-
-      function hasClass(o, cStr) {
-
-        return (o.className !== undefined ? new RegExp('(^|\\s)'+cStr+'(\\s|$)').test(o.className) : false);
-
-      }
-
-      function addClass(o, cStr) {
-
-        if (!o || !cStr || hasClass(o,cStr)) {
-          return false; // safety net
-        }
-        o.className = (o.className?o.className+' ':'')+cStr;
-
-      }
-
-      function removeClass(o, cStr) {
-
-        if (!o || !cStr || !hasClass(o,cStr)) {
-          return false;
-        }
-        o.className = o.className.replace(new RegExp('( '+cStr+')|('+cStr+')','g'),'');
-
-      }
-
-      function swapClass(o, cStr1, cStr2) {
-
-        var tmpClass = {
-          className: o.className
-        };
-
-        removeClass(tmpClass, cStr1);
-        addClass(tmpClass, cStr2);
-
-        o.className = tmpClass.className;
-
-      }
-
-      function toggleClass(o, cStr) {
-
-        (hasClass(o, cStr)?removeClass:addClass)(o, cStr);
-
-      }
-
-      return {
-        has: hasClass,
-        add: addClass,
-        remove: removeClass,
-        swap: swapClass,
-        toggle: toggleClass
-      };
-
-    }()),
-
-    events: (function() {
-
-      var add, remove, preventDefault;
-
-      add = (window.addEventListener !== undefined ? function(o, evtName, evtHandler) {
-        return o.addEventListener(evtName,evtHandler,false);
-      } : function(o, evtName, evtHandler) {
-        o.attachEvent('on'+evtName,evtHandler);
-      });
-
-      remove = (window.removeEventListener !== undefined ? function(o, evtName, evtHandler) {
-        return o.removeEventListener(evtName,evtHandler,false);
-      } : function(o, evtName, evtHandler) {
-        return o.detachEvent('on'+evtName,evtHandler);
-      });
-
-      preventDefault = function(e) {
-        if (e.preventDefault) {
-          e.preventDefault();
-        } else {
-          e.returnValue = false;
-          e.cancelBubble = true;
-        }
-      };
-
-      return {
-        add: add,
-        preventDefault: preventDefault,
-        remove: remove
-      };
-
-    }())
 
   };
 
