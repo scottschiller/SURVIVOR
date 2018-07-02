@@ -22,6 +22,24 @@ body {
  background: #000 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgAQMAAABJtOi3AAAABlBMVEUAAAD+/v7KB/Q9AAAAAnRSTlMAM8lDrC4AAAAQSURBVAhbY1zFAAMNg5EFALt0CCw/8KEzAAAAAElFTkSuQmCC);
  /* don't allow highlighting / selection, by accidental click + drag etc. */
  user-select: none;
+ /*
+  * avoid smooth image resizing, keep things pixelated - more true to the original.
+  * Firefox does a great job here; Safari is OK (though not pixel-sharp.)
+  * Chrome + Safari may be worse when using -webkit-optimize-contrast vs. default.
+  * https: //developer.mozilla.org/en-US/docs/Web/CSS/image-rendering
+  */
+  image-rendering: optimizeQuality;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  /* non-standard, but quite nice under Firefox */
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  /* chrome doesn't seem to implement this */
+  /* who knows, for IE */
+  -ms-interpolation-mode: nearest-neighbor;
+  /* font trickery */
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
 }
 
 #c64 h1,
