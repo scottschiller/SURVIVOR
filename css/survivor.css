@@ -21,9 +21,6 @@ body {
  /* grid-tile.png */
  background: #000 url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgAQMAAABJtOi3AAAABlBMVEUAAAD+/v7KB/Q9AAAAAnRSTlMAM8lDrC4AAAAQSURBVAhbY1zFAAMNg5EFALt0CCw/8KEzAAAAAElFTkSuQmCC);
  /* don't allow highlighting / selection, by accidental click + drag etc. */
- -ms-user-select: none;
- -moz-user-select: none;
- -webkit-user-select: none;
  user-select: none;
 }
 
@@ -391,108 +388,50 @@ body.show-help #world-container {
  height: 26px;
  padding: 3px;
  border-radius: 32px;
- -moz-transform: rotate(0deg), scale3d(1,1,1);
- -moz-transition: box-shadow 0.2s ease-in-out;
- -moz-transition-property: -moz-transform, box-shadow;
- -ms-transform: rotate(0deg), scale3d(1,1,1);
- -ms-transition: box-shadow 0.2s ease-in-out;
- -ms-transition-property: -ms-transform, box-shadow;
- -webkit-transform: rotate(0deg), scale3d(1,1,1);
- -webkit-transition: box-shadow 0.2s ease-in-out;
- -webkit-transition-property: -webkit-transform, box-shadow;
- -o-transform: rotate(0deg), scale3d(1,1,1);
- -o-transition-property: -o-transform, box-shadow;
+ opacity: 1;
+ transform: rotate(0deg), scale3d(1,1,1);
+ transition: box-shadow 0.2s ease-in-out;
+ transition-property: transform, opacity;
 }
 
 .ship.hidden {
- -webkit-transition: none;
- -moz-transition: none;
- -ms-transition: none;
- -o-transition: none;
- -webkit-transform: scale3d(0,0,1) !important;
- -moz-transform: scale3d(0,0,1) !important;
- -ms-transform: scale3d(0,0,1) !important;
- -o-transform: scale3d(0,0,1) !important;
+ transform: scale3d(10,10,1) !important;
+ opacity: 0;
+ transition: all 0.3s ease-out;
+ transition-property: transform, opacity;
  *display: none; /* IE 8 */
 }
 
-@-moz-keyframes thrustpulse {
-  from {
-    box-shadow: 0px 0px 0px rgba(255,32,32,0);
-  }
-  to {
-    box-shadow: 0px 0px 16px rgba(255,32,32,1);
-  }
-}
-
-@-webkit-keyframes thrustpulse {
-  from {
-    box-shadow: 0px 0px 0px rgba(255,32,32,0);
-  }
-  to {
-    box-shadow: 0px 0px 16px rgba(255,32,32,1);
-  }
-}
-
-.ship.thrusting {
- /* different background image? */
- box-shadow: 0px 0px 8px rgba(255,32,32,1);
- -moz-animation-duration: 0.5s;
- -moz-animation-name: thrustpulse;
- -moz-animation-iteration-count: infinite;
- -moz-animation-direction: alternate;
- -webkit-animation-duration: 0.5s;
- -webkit-animation-name: thrustpulse;
- -webkit-animation-iteration-count: infinite;
- -webkit-animation-direction: alternate;
-}
-
 .ship-thrust-up {
- -moz-transform: rotate(0deg);
- -ms-transform: rotate(0deg);
- -webkit-transform: rotate(0deg);
+ transform: rotate(0deg);
 }
 
 .ship.thrust-up.thrust-left {
- -moz-transform: rotate(-45deg);
- -ms-transform: rotate(-45deg);
- -webkit-transform: rotate(-45deg);
+ transform: rotate(-45deg);
 }
 
 .ship.thrust-up.thrust-right {
- -moz-transform: rotate(45deg);
- -ms-transform: rotate(45deg);
- -webkit-transform: rotate(45deg);
+ transform: rotate(45deg);
 }
 
 .ship.thrust-right {
- -moz-transform: rotate(90deg);
- -ms-transform: rotate(90deg);
- -webkit-transform: rotate(90deg);
+ transform: rotate(90deg);
 }
 
 .ship.thrust-down {
- -moz-transform: rotate(180deg);
- -ms-transform: rotate(180deg);
- -webkit-transform: rotate(180deg);
+ transform: rotate(180deg);
 }
 
 .ship.thrust-down.thrust-left {
- -moz-transform: rotate(-135deg);
- -ms-transform: rotate(-135deg);
- -webkit-transform: rotate(-135deg);
+ transform: rotate(-135deg);
 }
 
 .ship.thrust-down.thrust-right {
- -moz-transform: rotate(135deg);
- -ms-transform: rotate(135deg);
- -webkit-transform: rotate(135deg);
+ transform: rotate(135deg);
 }
 
 .ship.thrust-left {
- -moz-transform: rotate(-90deg);
- -ms-transform: rotate(-90deg);
- -webkit-transform: rotate(-90deg);
+ transform: rotate(-90deg);
 }
 
 .ship-gunfire {
@@ -634,60 +573,44 @@ body.show-help #world-container {
 /* inner sprite element: this element gets the sprite and will be transformed, sliding within the container. */
 
 #world.use-experimental-transforms .block .transform-sprite {
- -webkit-transform: translate3d(0px, 0px, 0px);
+ transform: translate3d(0px, 0px, 0px);
 }
 
 #world.use-experimental-transforms.phase-1 .block .transform-sprite {
- -webkit-transform: translate3d(0px, -32px, 0px);
+ transform: translate3d(0px, -32px, 0px);
 }
 
 #world.use-experimental-transforms.phase-2 .block .transform-sprite {
- -webkit-transform: translate3d(0px, -64px, 0px);
+ transform: translate3d(0px, -64px, 0px);
 }
 
 #world.use-experimental-transforms.phase-3 .block .transform-sprite {
- -webkit-transform: translate3d(0px, -96px, 0px);
+ transform: translate3d(0px, -96px, 0px);
 }
 
 #world.use-experimental-transforms.phase-4 .block .transform-sprite {
- -webkit-transform: translate3d(0px, -128px, 0px);
+ transform: translate3d(0px, -128px, 0px);
 }
 
 /* step-based animations, too */
 
+/*
 #world.use-experimental-transforms.pulse-interval-0 .block .transform-sprite {
- -webkit-animation: pulse 2s steps(4, end) infinite;
- -moz-animation: pulse 2s steps(4, end) infinite;
  animation: pulse 2s steps(4, end) infinite;
 }
 
 #world.use-experimental-transforms.pulse-interval-1 .block .transform-sprite {
- -webkit-animation: pulse 1.467s steps(4, end) infinite;
- -moz-animation: pulse 1.467s steps(4, end) infinite;
  animation: pulse 1.467s steps(4, end) infinite;
 }
 
 #world.use-experimental-transforms.pulse-interval-2 .block .transform-sprite {
- -webkit-animation: pulse 0.933s steps(4, end) infinite;
- -moz-animation: pulse 0.933s steps(4, end) infinite;
  animation: pulse 0.933s steps(4, end) infinite;
 }
 
 #world.use-experimental-transforms.pulse-interval-3 .block .transform-sprite {
- -webkit-animation: pulse 0.4s steps(4, end) infinite;
- -moz-animation: pulse 0.4s steps(4, end) infinite;
  animation: pulse 0.4s steps(4, end) infinite;
 }
-
-@-webkit-keyframes pulse {
- from { -webkit-transform: translate3d(0px, 0px, 0px); }
- to { -webkit-transform: translate3d(0px, -128px, 0px); }
-}
-
-@-moz-keyframes pulse {
- from { -moz-transform: translate3d(0px, 0px, 0px); }
- to { -moz-transform: translate3d(0px, -128px, 0px); }
-}
+*/
 
 @keyframes pulse {
  from { transform: translate3d(0px, 0px, 0px); }
@@ -718,7 +641,7 @@ body.show-help #world-container {
 
 #world.use-experimental-transforms.disable-pulse .block .transform-sprite {
  /* use-transform equivalent */
- -webkit-transform: none !important;
+ transform: none !important;
 }
 
 #world.disable-sprites div {
@@ -729,12 +652,9 @@ body.show-help #world-container {
 
 #world.disable-css3 div {
  border-radius: none !important;
- -moz-transform: none !important;
- -moz-transition: none !important;
- -webkit-transform: none !important;
- -webkit-transition: none !important;
- -webkit-animation: none !important;
- -moz-animation: none !important; 
+ transform: none !important;
+ transition: none !important;
+ animation: none !important;
  box-shadow: none !important;
  text-shadow: none !important;
 }
@@ -862,9 +782,7 @@ body.show-help #world-container {
 
 #world.use-transform .turret.dead {
  /* no more GPU for you */
- -ms-transform: none;
- -moz-transform: none;
- -webkit-transform: none;
+ transform: none;
 }
 
 #footer {
