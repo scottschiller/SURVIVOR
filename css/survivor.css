@@ -658,7 +658,7 @@ body.show-help #world-container {
 
 @keyframes pulse {
  from { transform: translate3d(0px, 0px, 0px); }
- to { transform: translate3d(0px, 0px, 0px); }
+ to { transform: translate3d(0px, -128px, 0px); }
 }
 
 .block.exploding,
