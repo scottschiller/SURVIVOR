@@ -8292,8 +8292,6 @@ function go_go_go() {
       l1 = document.getElementById('loading1'),
       l2 = document.getElementById('loading2');
 
-  document.getElementById('cursor').style.display = 'none';
-
   function startGame() {
 
     if (soundManager.ok()) {
@@ -8466,9 +8464,18 @@ function go_go_go() {
 
     _1541.onPosition(6000, showGameTitleScreen);
 
-    _1541.play();
+    // wait for key or click, because of <audio> playback restrictions.
 
-    l0.style.display = 'block';
+    function play1541() {
+      l0.style.display = 'block';
+      document.getElementById('cursor').style.display = 'none';
+      _1541.play();
+      utils.events.remove(document, 'keydown', play1541);
+      utils.events.remove(document, 'mousedown', play1541);
+    }
+
+    utils.events.add(document, 'keydown', play1541);
+    utils.events.add(document, 'mousedown', play1541);
 
   } else {
 
@@ -8508,28 +8515,23 @@ if (navigator.userAgent.match(/safari/i) && navigator.platform.match(/macIntel/i
     }
   });
 }
-if (!window.location.protocol.match(/http/i) || document.domain.match(/schillmania\.com/i)) {
 
-  soundManager.onready(function() {
-    if (document.referrer && document.referrer.match(/editor/i)) {
-      // if coming from the editor, skip straight to the goods.
-      go_go_go();
-    } else {
-      // let "READY." show for a second.
-      setTimeout(go_go_go, 1000);
-    }
-  });
+soundManager.onready(function() {
+  if (document.referrer && document.referrer.match(/editor/i)) {
+    // if coming from the editor, skip straight to the goods.
+    go_go_go();
+  } else {
+    // let "READY." show for a second.
+    setTimeout(go_go_go, 1000);
+  }
+});
 
-  soundManager.ontimeout(go_go_go);
-
-} else {
-
+soundManager.ontimeout(function() {
   // no sound effects for external use.
   // let "READY." show for a second.
   console.log('Note: sound effects are disabled.');
   setTimeout(go_go_go, 1000);
-
-}
+});
 
 // invocation closure
 }(window));
