@@ -366,22 +366,6 @@ body.show-help #world-container {
  width: 0px;
  height: 0px;
  _background: #000;
- /**
-  * avoid smooth image resizing, keep things pixelated - more true to the original.
-  * Firefox does a great job here; Safari is OK (though not pixel-sharp.)
-  * Chrome + Safari may be worse when using -webkit-optimize-contrast vs. default.
-  * https://developer.mozilla.org/en-US/docs/Web/CSS/image-rendering
-  */
- /*
- image-rendering: -webkit-optimize-contrast;
- */ 
- image-rendering: crisp-edges;
- image-rendering: optimizeQuality;
- image-rendering: pixelated;
- /* non-standard, but quite nice under Firefox */
- image-rendering: -moz-crisp-edges;
- /* who knows, for IE */
- -ms-interpolation-mode: nearest-neighbor;
 }
 
 .space {
