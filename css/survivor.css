@@ -113,6 +113,14 @@ body {
  padding: 2px;
  font-family: "C64 User Mono";
  color: #fff;
+ cursor: pointer;
+ /**
+  * in the 80s, you would have been connected through a signal converter to a TV
+  * on channel 3, or a Commodore-branded CRT "monitor" with composite video inputs,
+  * which gave higher quality rendering. Notwithstanding, there should be some fuzz.
+  * this filter may be a bit aggressive, but, eh. ;)
+  */
+  filter: blur(0.8px);
 }
 
 #c64 #cursor {
