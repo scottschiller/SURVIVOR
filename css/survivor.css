@@ -345,7 +345,7 @@ body.show-help #help-screen {
 
 body.show-help #world-container {
  /* a little gratuitous filter nonsense, why not. */
- -webkit-filter: blur(1px);
+ filter: blur(1px);
 }
 
 #world-container {
