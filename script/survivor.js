@@ -8184,7 +8184,7 @@ function Survivor() {
 
     game.objects.gameLoop = new GameLoop();
 
-    if (soundManager.ok() && !IS_MUTED) {
+    if (soundManager.ok() && !IS_MUTED && !isSafari) {
       initAudio();
     }
 
@@ -8492,28 +8492,22 @@ function go_go_go() {
 
 }
 
-if (navigator.userAgent.match(/safari/i) && navigator.platform.match(/macIntel/i) && navigator.userAgent.match(/Version\/[7|8]/i) && !window.location.toString().match(/html5audio/i)) {
-  // https://bugs.webkit.org/show_bug.cgi?id=116145
-  // looks like it will be fixed in a future release. try #html5audio=1 in URL to override/test.
-  if (window.console && console.log) {
-    console.log('Preferring Flash for audio due to Safari 7 + 8 HTML5 audio performance bug. https://bugs.webkit.org/show_bug.cgi?id=116145');
-  }
-  soundManager.setup({
-    preferFlash: true,
-    // needed for good performance in Safari, otherwise multiShot lags a bit.
-    useHighPerformance: true,
-    onready: function() {
-      // if 100% HTML5, disable because performance will suck.
-      if (soundManager.html5Only) {
-        if (window.console && console.log) {
-          console.log('SM2 loaded in 100% HTML5 mode, disabling audio so game performance is not impacted.');
-        }
-        // hack around volume for now
-        // soundManager.defaultOptions.volume = 0;
-        // edge case: disable() doesn't seem to work within onready(), heh.
-        window.setTimeout(soundManager.disable, 500);
-      }
-    }
+/**
+ * Safari performance dies when playing multiple HTML5 <audio> / Audio() objects on desktop.
+ * So, audio is disabled by default. This has been a problem since 2013.
+ * https://bugs.webkit.org/show_bug.cgi?id=116145
+ */
+var isSafari = (
+  navigator.userAgent.match(/safari/i)
+  && !navigator.userAgent.match(/chrome/i)
+  && !window.location.toString().match(/forceaudio/i)
+);
+
+if (isSafari) {
+  console.warn('Disabling standard HTML5 Audio() because Safari 11 has performance issues. Old bug here. ?forceaudio to bypass this warning. https://bugs.webkit.org/show_bug.cgi?id=116145');
+  soundManager.onready(function() {
+    // edge case: disable() doesn't seem to work within onready(), heh.
+    window.setTimeout(soundManager.disable, 500);
   });
 }
 
