@@ -118,7 +118,8 @@ body {
   * in the 80s, you would have been connected through a signal converter to a TV
   * on channel 3, or a Commodore-branded CRT "monitor" with composite video inputs,
   * which gave higher quality rendering. Notwithstanding, there should be some fuzz.
-  * this filter may be a bit aggressive, but, eh. ;)
+  * this might be aggressive, but you aren't actually going to be *using* this. ;)
+  * safari over-does it in particular, probably rounding up to 1px.
   */
   filter: blur(0.8px);
 }
