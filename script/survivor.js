@@ -1,4 +1,4 @@
-﻿/** @license
+/** @license
  *
  * SURVIVOR: A HTML + CSS + JavaScript prototype
  * based on the Commodore 64 version of Survivor from 1983
@@ -14,12 +14,11 @@
  *
  */
 
-/*global window, console, document, navigator, setTimeout, setInterval, clearInterval, soundManager */
-/*jslint vars: true, regexp: true, sloppy: true, white: true, nomen: true, plusplus: true, todo: true */
-
+// 7.02.2018: Move to appeasing the eslint gods. Prevent HTML5 Audio() on Safari because performance dies. CSS clean-up, -webkit- prefix cruft clean-up etc.
 // 8.16.2014: The jslint gods have been re-appeased. Added strict mode.
-
 // 5.25.2013: The jslint gods have been appeased.
+
+/*global window, console, document, navigator, setTimeout, setInterval, clearInterval, soundManager */
 
 /**
  *
@@ -46,7 +45,7 @@
  *  - when in a row/column, determine exactly what is in contact. isOverlappingGrid({x, y, row, col}) or somesuch.
  *  - spaceballs should reverse course and randomly flip the other axis when they hit a boundary (wall, or another spaceball.)
  *  - bad guys only collide with spaceship. absolutely-positioned for everything else.
- * 
+ *
  * Graphic elements
  * ----------------
  *  - blocks
@@ -122,7 +121,7 @@ var survivor;
 
 (function(window) {
 
-"use strict";
+'use strict';
 
 if (window.console === undefined) {
   // hax
@@ -462,7 +461,7 @@ function Survivor() {
 
   };
 
-  if (USE_EXPERIMENTAL_TRANSFORM) { 
+  if (USE_EXPERIMENTAL_TRANSFORM) {
     innerNode = document.createElement('div');
     innerNode.className = 'transform-sprite';
     itemTemplate.appendChild(innerNode);
@@ -486,7 +485,7 @@ function Survivor() {
     // throttle audible pitch increase calls
     var now = new Date();
     if (now - lastAudioIncrement > audioIncrementThrottle) {
-      
+
       lastAudioIncrement = now;
       audioPitchCounter += 0.5;
       if (audioPitchCounter >= audioPitchCounterMax) {
@@ -525,8 +524,8 @@ function Survivor() {
     playPop: function(audioPitch) {
 
       soundManager.play('pop-sprite-' + soundSprites.popSpriteCounter, {
-        from: (audioPitch*400) - 10,
-         to: (audioPitch*400) + 350
+        from: (audioPitch * 400) - 10,
+         to: (audioPitch * 400) + 350
       });
 
       soundSprites.popSpriteCounter++;
@@ -574,11 +573,11 @@ function Survivor() {
 
     var transform, styles, prop;
 
-    function has(prop) {
+    function has(propString) {
 
       // test for feature support
-      var result = testDiv.style[prop];
-      return (result !== undefined ? prop : null);
+      var result = testDiv.style[propString];
+      return (result !== undefined ? propString : null);
 
     }
 
@@ -587,7 +586,7 @@ function Survivor() {
 
       audio: false, // set later via SM2
 
-      opacity: (function(){
+      opacity: (function() {
         try {
           testDiv.style.opacity = '0.5';
         } catch(e) {
@@ -597,7 +596,7 @@ function Survivor() {
       }()),
 
       transform: {
-        ie:  has('-ms-transform'),
+        ie: has('-ms-transform'),
         moz: has('MozTransform'),
         opera: has('OTransform'),
         webkit: has('webkitTransform'),
@@ -610,12 +609,12 @@ function Survivor() {
         prop: null
       },
 
-      'getAnimationFrame': getAnimationFrame
+      getAnimationFrame: getAnimationFrame
 
     };
 
     localFeatures.transform.prop = (
-      localFeatures.transform.w3 || 
+      localFeatures.transform.w3 ||
       localFeatures.transform.moz ||
       localFeatures.transform.webkit ||
       localFeatures.transform.ie ||
@@ -716,14 +715,14 @@ function Survivor() {
 
     var i, j, k, l;
 
-    for (i=0, j=game.objects.spaceBalls.length; i<j; i++) {
+    for (i = 0, j = game.objects.spaceBalls.length; i < j; i++) {
       game.objects.spaceBalls[i].animate();
     }
 
     // also do "own" collision check
-    for (i=0, j=game.objects.spaceBalls.length; i<j; i++) {
+    for (i = 0, j = game.objects.spaceBalls.length; i < j; i++) {
 
-      for (k=0, l=game.objects.spaceBalls.length; k<l; k++) {
+      for (k = 0, l = game.objects.spaceBalls.length; k < l; k++) {
 
         // don't compare against self...
         if (k !== i && game.objects.spaceBalls[i].data.row === game.objects.spaceBalls[k].data.row && game.objects.spaceBalls[i].data.col === game.objects.spaceBalls[k].data.col) {
@@ -754,11 +753,11 @@ function Survivor() {
 
     css = {
 
-      'phase0': '', // default state
-      'phase1': 'phase-1',
-      'phase2': 'phase-2',
-      'phase3': 'phase-3',
-      'phase4': 'phase-4'
+      phase0: '', // default state
+      phase1: 'phase-1',
+      phase2: 'phase-2',
+      phase3: 'phase-3',
+      phase4: 'phase-4'
 
     };
 
@@ -766,24 +765,24 @@ function Survivor() {
 
       GAME_SPEED: 1, // the game speed multiplier
       loopTimer: null,
-      loopInterval: 1000/33, // aim for 33 fps
+      loopInterval: 1000 / 33, // aim for 33 fps
       lastPhase: null,
       pulseCount: 0,
       pulseStage: 0,
       pulsePhases: 4,
       pulseTimer: null, // will inherit default
       pulseIntervals: {
-        'stage0': 500,
-        'stage1': 366.67,
-        'stage2': 233.33,
-        'stage3': 100
+        stage0: 500,
+        stage1: 366.67,
+        stage2: 233.33,
+        stage3: 100
       },
       speedMultiplier: 1,
       speedMultipliers: {
-        'stage0': 1,
-        'stage1': 1.1,
-        'stage2': 1.2,
-        'stage3': 1.3
+        stage0: 1,
+        stage1: 1.1,
+        stage2: 1.2,
+        stage3: 1.3
       },
       statsTimer: null,
       statsInterval: 1000
@@ -794,7 +793,7 @@ function Survivor() {
 
       loop: function() {
 
-/*
+        /*
         var now = new Date();
 
         if (now - lastExec < data.loopThrottle) {
@@ -803,7 +802,8 @@ function Survivor() {
         }
 
         lastExec = now;
-*/
+        */
+
         // based on game state, animate or wait for input or ?
         counter++;
         fpsCounter++;
@@ -811,7 +811,7 @@ function Survivor() {
         if (game.objects.levelEndSequence.data.active) {
 
           game.objects.levelEndSequence.animate();
-          return false;
+          return;
 
         }
 
@@ -844,7 +844,7 @@ function Survivor() {
 
         // don't animate the world if the ship is dying/dead.
         if (!game.objects.ship.isAlive()) {
-          return false;
+          return;
         }
 
         // the world heartbeat, per se.
@@ -900,6 +900,11 @@ function Survivor() {
       var now = new Date(),
           delta = now - lastExec;
 
+      if (data.loopTimer) {
+        // repeat the process
+        getNextFrame();
+      }
+  
       if (delta >= data.loopInterval) {
 
         lastExec = now;
@@ -907,18 +912,15 @@ function Survivor() {
         // do work, son
         events.loop();
 
-      }
+        return;
 
-      if (data.loopTimer) {
-        // and repeat the process
-        getNextFrame();
       }
 
     }
 
     getNextFrame = function() {
 
-      features.getAnimationFrame(refreshAnimationCallback);
+      window.getAnimationFrame(refreshAnimationCallback);
 
     };
 
@@ -963,13 +965,13 @@ function Survivor() {
       data.pulseInterval = data.pulseIntervals['stage' + nStage];
       data.speedMultiplier = data.speedMultipliers['stage' + nStage];
 
-      console.log('set pulse stage ' + nStage +', interval ' + data.pulseInterval);
+      console.log('set pulse stage ' + nStage + ', interval ' + data.pulseInterval);
 
     }
 
     function nextPulseStage() {
 
-      setPulseStage(getPulseStage()+1);
+      setPulseStage(getPulseStage() + 1);
 
     }
 
@@ -1003,6 +1005,7 @@ function Survivor() {
         } else {
 
           data.loopTimer = true;
+
           getNextFrame();
 
         }
@@ -1059,7 +1062,7 @@ function Survivor() {
 
     }
 
-    function init() {
+    function eventsInit() {
 
       // set default state? welcome screen, etc.?
      oStats = document.getElementById('fps');
@@ -1070,7 +1073,7 @@ function Survivor() {
 
     return {
       data: data,
-      init: init,
+      init: eventsInit,
       isActive: isActive,
       pause: pause,
       resume: resume,
@@ -1099,10 +1102,10 @@ function Survivor() {
       var i;
 
       if (!objects.blocks.length) {
-        return false;
+        return;
       }
 
-      for (i=0; i<objects.blocks.length; i++) {
+      for (i = 0; i < objects.blocks.length; i++) {
 
         if (objects.blocks[i].animate()) {
 
@@ -1133,7 +1136,7 @@ function Survivor() {
       }
 
     }
- 
+
     return {
       animate: animate,
       startAnimation: startAnimation
@@ -1177,13 +1180,13 @@ function Survivor() {
       return !data.dead;
     }
 
-    function pixelCollisionCheck(oOptions) {
+    function pixelCollisionCheck(localOptions) {
 
-      var hit;
+      var hitObject;
       var collision = game.objects.collision;
 
-      hit = collision.checkSprites({
-         object1: oOptions,
+      hitObject = collision.checkSprites({
+         object1: localOptions,
          object2: {
            type: 'block-type-generic',
            x: data.x,
@@ -1193,7 +1196,7 @@ function Survivor() {
          }
       });
 
-      return hit;
+      return hitObject;
 
     }
 
@@ -1258,7 +1261,7 @@ function Survivor() {
 
     }
 
-    function init() {
+    function blockInit() {
 
       if (!o) {
 
@@ -1287,7 +1290,7 @@ function Survivor() {
       data.dead = false;
       data.power = defaults.power;
 
-      init();
+      blockInit();
 
     }
 
@@ -1329,7 +1332,7 @@ function Survivor() {
 
     }
 
-    init();
+    blockInit();
 
     objectInterface = {
       animate: animate,
@@ -1364,10 +1367,10 @@ function Survivor() {
         nodeParent = game.dom.world;
 
     css = {
-      'bird': 'bird',
-      'smiley': 'smiley',
-      'x': 'x',
-      'exploding': 'exploding'
+      bird: 'bird',
+      smiley: 'smiley',
+      x: 'x',
+      exploding: 'exploding'
     };
 
     data = {
@@ -1382,8 +1385,8 @@ function Survivor() {
       h: 24,
       containerW: 32,
       containerH: 32,
-      vX: (game.data.NODE_WIDTH/16 + Math.random() * 0.5) * game.objects.gameLoop.data.GAME_SPEED,
-      vY: (game.data.NODE_HEIGHT/16 + Math.random() * 0.5) * game.objects.gameLoop.data.GAME_SPEED,
+      vX: ((game.data.NODE_WIDTH / 16) + (Math.random() * 0.5)) * game.objects.gameLoop.data.GAME_SPEED,
+      vY: ((game.data.NODE_HEIGHT / 16) + (Math.random() * 0.5)) * game.objects.gameLoop.data.GAME_SPEED,
       points: 200,
       explosionFrame: 0,
       explosionFrames: 10,
@@ -1531,8 +1534,8 @@ function Survivor() {
       var ship = game.objects.ship;
 
       return {
-        deltaX: (data.x < ship.data.x - (ship.data.w/2) ? 1 : -1),
-        deltaY: (data.y < ship.data.y - (ship.data.h/2) ? 1 : -1)
+        deltaX: (data.x < ship.data.x - (ship.data.w / 2) ? 1 : -1),
+        deltaY: (data.y < ship.data.y - (ship.data.h / 2) ? 1 : -1)
       };
 
     }
@@ -1566,7 +1569,7 @@ function Survivor() {
 
     }
 
-    function reset() {
+    function resetBadGuy() {
 
       hide();
 
@@ -1670,7 +1673,7 @@ function Survivor() {
 
       if (fire.length) {
 
-        for (i=0, j=fire.length; i<j; i++) {
+        for (i = 0, j = fire.length; i < j; i++) {
 
           hit = game.objects.collision.check(thisPoint, {
             x: fire[i].data.x,
@@ -1716,7 +1719,7 @@ function Survivor() {
         // did the bad guy hit turret gunfire?
 
         // if heading down or right, base coordinates on far edges.
-        location = game.objects.collision.xyToRowCol(data.x + (data.w/2), data.y + (data.h/2));
+        location = game.objects.collision.xyToRowCol(data.x + (data.w / 2), data.y + (data.h / 2));
         // var location = game.objects.collision.xyToRowCol(data.x, data.y);
 
         turretGunfire = game.objects.turretGunfireMap.check(location.row, location.col);
@@ -1755,7 +1758,7 @@ function Survivor() {
 
         data.exploding = false;
         data.dead = true;
-        reset();
+        resetBadGuy();
         destruct();
 
     }
@@ -1766,7 +1769,7 @@ function Survivor() {
 
       // may be inactive, or died and awaiting cleanup
       if (!data.active || data.dead) {
-        return false;
+        return;
       }
 
       counter++;
@@ -1799,24 +1802,24 @@ function Survivor() {
 
         // explosion/death sequence
 
-//        if (counter % 2 === 0) {
+        // if (counter % 2 === 0) {
 
-          data.explosionFrame++;
+        data.explosionFrame++;
 
-          applyFrameX(data.explosionFrame);
+        applyFrameX(data.explosionFrame);
 
-          if (data.explosionFrame >= data.explosionFrames) {
-            // it's all over.
-            dead();
-          }
+        if (data.explosionFrame >= data.explosionFrames) {
+          // it's all over.
+          dead();
+        }
 
-//        }
+        // }
 
       }
 
     }
 
-    function init() {
+    function initBadGuy() {
 
       if (!o) {
 
@@ -1832,7 +1835,7 @@ function Survivor() {
     }
 
     // hack/convenience: start right away?
-    init();
+    initBadGuy();
 
     // hack/testing
     startAttack();
@@ -1842,7 +1845,7 @@ function Survivor() {
       collisionCheck: collisionCheck,
       data: data,
       die: die,
-      init: init,
+      init: initBadGuy,
       startAttack: startAttack
     };
 
@@ -1863,7 +1866,7 @@ function Survivor() {
       var items = objects.badGuys,
           i, j;
 
-      for (i=0, j=items.length; i<j; i++) {
+      for (i = 0, j = items.length; i < j; i++) {
         items[i].animate();
       }
 
@@ -1888,7 +1891,7 @@ function Survivor() {
 
       if (items.length) {
 
-        for (j=items.length-1; j>=0; j--) {
+        for (j = items.length - 1; j >= 0; j--) {
 
           thisPoint = {
             x: items[j].data.x,
@@ -1897,7 +1900,7 @@ function Survivor() {
             h: items[j].data.h
           };
 
-          for (i=items.length-1; i>=0; i--) {
+          for (i = items.length - 1; i >= 0; i--) {
 
             // don't compare to self, or dead things...
             if (i !== j && items[i].data.active && !items[i].data.exploding && items[j].data.active && !items[j].data.exploding) {
@@ -1939,7 +1942,7 @@ function Survivor() {
 
       if (items.length) {
 
-        for (i=0, j=items.length; i<j; i++) {
+        for (i = 0, j = items.length; i < j; i++) {
           hit = items[i].collisionCheck();
           if (hit) {
             hit = true;
@@ -1967,7 +1970,7 @@ function Survivor() {
       var i;
 
       // hack: check and clean up any dead ones, first.
-      for (i=0; i<objects.badGuys.length; i++) {
+      for (i = 0; i < objects.badGuys.length; i++) {
         if (objects.badGuys[i].data.dead) {
           objects.badGuys.splice(i, 1);
         }
@@ -1981,7 +1984,7 @@ function Survivor() {
 
       var i, j;
       // the effect of a smartbomb.
-      for (i=0, j=objects.badGuys.length; i<j; i++) {
+      for (i = 0, j = objects.badGuys.length; i < j; i++) {
         // TODO: active check?
         objects.badGuys[i].die();
       }
@@ -2042,7 +2045,7 @@ function Survivor() {
       var xAxis = Math.random() > 0.5,
 
           // randomly choose +/-
-          velocity = (game.data.NODE_WIDTH/16) * (Math.random() > 0.5 ? 1 : -1) * game.objects.gameLoop.data.GAME_SPEED;
+          velocity = (game.data.NODE_WIDTH / 16) * (Math.random() > 0.5 ? 1 : -1) * game.objects.gameLoop.data.GAME_SPEED;
 
       // HACK: for now, just be stupid and reverse course.
       // current bug exists where reversing direction causes minute up/down/left/right movements, resulting in imperfect grid alignment
@@ -2050,7 +2053,7 @@ function Survivor() {
 
       if (!noAxisFlip) {
 
-        data.vX = (xAxis ? velocity: 0);
+        data.vX = (xAxis ? velocity : 0);
         data.vY = (xAxis ? 0 : velocity);
 
       } else {
@@ -2175,7 +2178,8 @@ function Survivor() {
         || (data.vX >= 0 && data.col >= game.data.world_cols)
         || (data.vY >= 0 && data.row >= game.data.world_rows)
         || (data.vY < 0 && data.y + data.vY <= 0)) {
-        return bounce();
+        bounce();
+        return;
       }
 
       // check next block?
@@ -2205,7 +2209,7 @@ function Survivor() {
       // this should be only a Block() instance.
       if (item && !item.data.dead) {
         // console.log('spaceball hit block');
-        return bounce();
+        bounce();
       }
 
     }
@@ -2260,13 +2264,13 @@ function Survivor() {
 
     }
 
-    function pixelCollisionCheck(oOptions) {
+    function pixelCollisionCheck(localOptions) {
 
       var hit,
           collision = game.objects.collision;
 
       hit = collision.checkSprites({
-         object1: oOptions,
+         object1: localOptions,
          object2: {
            // HACK: note re-use of ship pixel data here. It's close enough. :D
            type: 'ship',
@@ -2281,9 +2285,9 @@ function Survivor() {
 
     }
 
-    function init() {
+    function initSpaceBall() {
 
-      var velocity = (game.data.NODE_WIDTH/16) * (Math.random() > 0.5 ? 1 : -1) * game.objects.gameLoop.data.GAME_SPEED;
+      var velocity = (game.data.NODE_WIDTH / 16) * (Math.random() > 0.5 ? 1 : -1) * game.objects.gameLoop.data.GAME_SPEED;
 
       if (!o) {
 
@@ -2308,7 +2312,7 @@ function Survivor() {
 
       // you can't kill a roach, man.
 
-      init();
+      initSpaceBall();
 
       // show right away if it should be visible, too
 
@@ -2322,7 +2326,7 @@ function Survivor() {
     }
 
     // hack/convenience: start right away?
-    init();
+    initSpaceBall();
 
     // hack/testing
     startAttack();
@@ -2332,7 +2336,7 @@ function Survivor() {
       bounce: bounce,
       data: data,
       hittable: hittable,
-      init: init,
+      init: initSpaceBall,
       pixelCollisionCheck: pixelCollisionCheck,
       restore: restore,
       startAttack: startAttack
@@ -2466,19 +2470,19 @@ function Survivor() {
       var targetX,
           targetY;
 
-      if (x < data.coords.width/2) {
+      if (x < data.coords.width / 2) {
         targetX = 0;
       } else {
-        targetX = parseInt(x - data.coords.width/2, 10);
-      } 
-
-      if (y < data.coords.height/2) {
-        targetY = 0;
-      } else {
-        targetY = parseInt(y - data.coords.height/2, 10);
+        targetX = parseInt(x - (data.coords.width / 2), 10);
       }
 
-/*
+      if (y < data.coords.height / 2) {
+        targetY = 0;
+      } else {
+        targetY = parseInt(y - (data.coords.height / 2), 10);
+      }
+
+      /*
       window.scrollTo(targetX, targetY);
 
       data.coords.lastX = targetX;
@@ -2486,7 +2490,8 @@ function Survivor() {
 
       data.coords.x = targetX;
       data.coords.y = targetY;
-*/
+      */
+
       moveTo(targetX, targetY);
 
     }
@@ -2505,7 +2510,7 @@ function Survivor() {
       newY = Math.min(game.data.world_height, Math.max(0, newY));
 
       if (newX === data.coords.lastX && data.newY === data.coords.lastY) {
-        return false;
+        return;
       }
 
       moveTo(newX, newY);
@@ -2529,7 +2534,7 @@ function Survivor() {
 
     }
 
-    function init() {
+    function initScreen() {
 
       attachEvents();
 
@@ -2541,7 +2546,7 @@ function Survivor() {
 
       centerAtPoint: centerAtPoint,
       data: data,
-      init: init,
+      init: initScreen,
       isInView: isInView,
       moveBy: moveBy,
       moveTo: moveTo,
@@ -2579,13 +2584,13 @@ function Survivor() {
 
        // meaningful labels for key values
        keyMap = {
-         'shift': 16,
-         'ctrl': 17,
-         'space': 32,
-         'left': 37,
-         'up': 38,
-         'right': 39,
-         'down': 40
+         shift: 16,
+         ctrl: 17,
+         space: 32,
+         left: 37,
+         up: 38,
+         right: 39,
+         down: 40
        };
 
     events = {
@@ -2598,7 +2603,7 @@ function Survivor() {
             keys[e.keyCode].down(e);
           }
           if (keys[e.keyCode].allowEvent === undefined) {
-            return stopEvent(e);
+            stopEvent(e);
           }
         }
 
@@ -2612,7 +2617,7 @@ function Survivor() {
             keys[e.keyCode].up(e);
           }
           if (keys[e.keyCode].allowEvent === undefined) {
-            return stopEvent(e);
+            stopEvent(e);
           }
         }
 
@@ -2625,7 +2630,7 @@ function Survivor() {
       // NOTE: Each function gets an (e) event argument.
 
       // shift
-      '16': {
+      16: {
 
         allowEvent: true, // don't use stopEvent()
 
@@ -2644,7 +2649,7 @@ function Survivor() {
       },
 
       // ctrl (alternate for shift key)
-      '17': {
+      17: {
 
         allowEvent: true, // don't use stopEvent()
 
@@ -2663,7 +2668,7 @@ function Survivor() {
       },
 
       // left
-      '37': {
+      37: {
 
         down: function() {
 
@@ -2681,7 +2686,7 @@ function Survivor() {
       },
 
       // up
-      '38': {
+      38: {
 
         down: function() {
 
@@ -2699,7 +2704,7 @@ function Survivor() {
       },
 
       // right
-      '39': {
+      39: {
 
         down: function() {
 
@@ -2717,7 +2722,7 @@ function Survivor() {
       },
 
       // down
-      '40': {
+      40: {
 
         down: function() {
 
@@ -2735,7 +2740,7 @@ function Survivor() {
       },
 
       // space bar!
-      '32': {
+      32: {
 
         down: function() {
 
@@ -2778,7 +2783,7 @@ function Survivor() {
 
     // init?
 
-    function init() {
+    function initKeyboardMonitor() {
 
       attachEvents();
 
@@ -2786,7 +2791,7 @@ function Survivor() {
 
     return {
 
-      init: init,
+      init: initKeyboardMonitor,
       isDown: isDown,
       releaseAll: releaseAll
 
@@ -2816,8 +2821,8 @@ function Survivor() {
       y: oOptions.y,
       w: 96,
       h: 80,
-      vX: game.data.NODE_WIDTH/2 * oOptions.vX,
-      vY: game.data.NODE_HEIGHT/2 * oOptions.vY
+      vX: (game.data.NODE_WIDTH / 2) * oOptions.vX,
+      vY: (game.data.NODE_HEIGHT / 2) * oOptions.vY
 
     };
 
@@ -2893,7 +2898,7 @@ function Survivor() {
 
     }
 
-    function init() {
+    function initBigExplosion() {
 
       o = bigExplosionTemplate.cloneNode(true);
 
@@ -2904,7 +2909,7 @@ function Survivor() {
 
     }
 
-    init();
+    initBigExplosion();
 
     return {
       data: data,
@@ -2938,7 +2943,7 @@ function Survivor() {
       if (features.audio) {
 
         if (Math.random() > 0.85) {
-          soundSprites.playBoom(parseInt(Math.random()*10, 10));
+          soundSprites.playBoom(parseInt(Math.random() * 10, 10));
           // TODO: pan
         }
 
@@ -2984,9 +2989,9 @@ function Survivor() {
         // create several explosions over time
         createExplosion();
 
-        for (i=0; i<maxObjects; i++) {
-          window.setTimeout(createExplosion, (i+1)*50);
-          window.setTimeout(createExplosion, (i+1)*50);
+        for (i = 0; i < maxObjects; i++) {
+          window.setTimeout(createExplosion, (i + 1) * 50);
+          window.setTimeout(createExplosion, (i + 1) * 50);
         }
 
       }
@@ -3011,7 +3016,7 @@ function Survivor() {
 
       var i, j;
 
-      for (i=0, j=objects.explosions.length; i<j; i++) {
+      for (i = 0, j = objects.explosions.length; i < j; i++) {
         objects.explosions[i].destruct();
       }
 
@@ -3019,7 +3024,7 @@ function Survivor() {
 
     }
 
-    function end() {
+    function endLevelEndSequence() {
 
       var oEnd,
           oBody,
@@ -3028,7 +3033,7 @@ function Survivor() {
 
       // complete.
       if (data.waiting) {
-        return false;
+        return;
       }
 
       data.waiting = true;
@@ -3051,7 +3056,7 @@ function Survivor() {
 
       oEnd.style.display = 'block';
 
-      oBody.style.marginTop = -parseInt(oBody.offsetHeight/2, 10) + 'px';
+      oBody.style.marginTop = -parseInt(oBody.offsetHeight / 2, 10) + 'px';
 
       game.objects.gameLoop.pause();
 
@@ -3083,14 +3088,14 @@ function Survivor() {
     function animate() {
 
       if (data.waiting || !data.active) {
-        return false;
+        return;
       }
 
       var i, j,
           isComplete,
           position;
 
-      for (i=0, j=objects.explosions.length; i<j; i++) {
+      for (i = 0, j = objects.explosions.length; i < j; i++) {
 
         isComplete = objects.explosions[i] && objects.explosions[i].animate();
 
@@ -3106,7 +3111,7 @@ function Survivor() {
       }
 
       if (new Date() - runTime > data.maxRuntime) {
-        end();
+        endLevelEndSequence();
       }
 
     }
@@ -3200,7 +3205,7 @@ function Survivor() {
 
     }
 
-    for (i=0, j=directions.length; i<j; i++) {
+    for (i = 0, j = directions.length; i < j; i++) {
 
       targetCol = col + directions[i][0];
       targetRow = row + directions[i][1];
@@ -3220,7 +3225,7 @@ function Survivor() {
     }
 
    // edge case: all spaces occupied? try recursing with a random direction.
-   direction = directions[parseInt(Math.random()*directions.length, 10)];
+   direction = directions[parseInt(Math.random() * directions.length, 10)];
 
    console.log('recursing with ', col + direction[0], row + direction[1]);
 
@@ -3960,10 +3965,10 @@ function Survivor() {
         ]
 
       }
-      
+
     ];
 
-    for (i=0, j=data.length; i<j; i++) {
+    for (i = 0, j = data.length; i < j; i++) {
       spriteData[data[i].id] = new SpriteData(data[i]);
     }
 
@@ -3988,8 +3993,8 @@ function Survivor() {
 
       result = {
 
-        col: Math.max(0, Math.min(game.data.world_cols, Math.floor(x/game.data.NODE_WIDTH))),
-        row: Math.max(0, Math.min(game.data.world_rows, Math.floor(y/game.data.NODE_HEIGHT)))
+        col: Math.max(0, Math.min(game.data.world_cols, Math.floor(x / game.data.NODE_WIDTH))),
+        row: Math.max(0, Math.min(game.data.world_rows, Math.floor(y / game.data.NODE_HEIGHT)))
 
       };
 
@@ -4040,24 +4045,19 @@ function Survivor() {
           }
         }
 
-      } else {
-
-        // point 1 is to the right.
-
-        if (point2.x + point2.w >= point1.x) {
-          // point 2 overlaps point 1 on x.
-          if (point2.y < point1.y) {
-            // point 2 is above point 1.
-            result = (point2.y + point2.h >= point1.y);
-          } else {
-            // point 2 is below point 1.
-            result = (point1.y + point1.h >= point2.y);
-          }
+      // point 1 is to the right.
+      } else if (point2.x + point2.w >= point1.x) {
+        // point 2 overlaps point 1 on x.
+        if (point2.y < point1.y) {
+          // point 2 is above point 1.
+          result = (point2.y + point2.h >= point1.y);
         } else {
-          // no overlap?
-          result = false;
+          // point 2 is below point 1.
+          result = (point1.y + point1.h >= point2.y);
         }
-
+      } else {
+        // no overlap?
+        result = false;
       }
 
       return result;
@@ -4253,18 +4253,18 @@ function Survivor() {
 
       var s1X, s1Y, s2X, s2Y;
 
-      for (i=0, j=max_height; i<j && !pixel_overlap; i++) {
-        for (k=0, l=max_width; k<l && !pixel_overlap; k++) {
+      for (i = 0, j = max_height; i < j && !pixel_overlap; i++) {
+        for (k = 0, l = max_width; k < l && !pixel_overlap; k++) {
           s1X = k - overlap.sprite1.xOffset;
           s1Y = i - overlap.sprite1.yOffset;
           s2X = k - overlap.sprite2.xOffset;
           s2Y = i - overlap.sprite2.yOffset;
           if (s1X >= 0 && s1X < sprite1Data.data.width && s1Y >= 0 && s1Y < sprite1Data.data.height && s2X >= 0 && s2X < sprite2Data.data.width && s2Y >= 0 && s2Y < sprite2Data.data.height) {
-//            console.log('[ loop row/col ' + i + ', ' + k +']: comparing ' + s1X + ', ' + s1Y + ' to ' + s2X + ', ' + s2Y);
+            // console.log('[ loop row/col ' + i + ', ' + k +']: comparing ' + s1X + ', ' + s1Y + ' to ' + s2X + ', ' + s2Y);
             pixel_test = (sprite1Data.check(s1Y, s1X) && sprite2Data.check(s2Y, s2X));
             if (pixel_test) {
               if (PERFORMANCE_MODE || DEBUG_MODE) {
-                console.log('FOUND HIT at loop row/col ' + i + ', ' + k +', comparing ' + s1X + ', ' + s1Y + ' to ' + s2X + ', ' + s2Y);
+                console.log('FOUND HIT at loop row/col ' + i + ', ' + k + ', comparing ' + s1X + ', ' + s1Y + ' to ' + s2X + ', ' + s2Y);
                 console.log('sprite1, sprite2', sprite1, sprite2);
                 console.log('delta X, Y, W, H: ' + deltaX + ', ' + deltaY + ', ' + deltaW + ', ' + deltaH);
                 console.log('overlap data', overlap.sprite1, overlap.sprite2);
@@ -4295,7 +4295,7 @@ function Survivor() {
         intersects.push(getIntersect(point.x, point.y + point.h));
         intersects.push(getIntersect(point.x + point.w, point.y + point.h));
 
-        for (i=0; i<intersects.length; i++) {
+        for (i = 0; i < intersects.length; i++) {
           // mark neighbouring offsets
           intersects[i].isNeighbour = true;
         }
@@ -4303,7 +4303,7 @@ function Survivor() {
       }
 
       // default case: go with the midpoint of the thing.
-      intersects.push(getIntersect(point.x + (point.w/2), point.y + (point.h/2)));
+      intersects.push(getIntersect(point.x + (point.w / 2), point.y + (point.h / 2)));
 
       return intersects;
 
@@ -4347,8 +4347,8 @@ function Survivor() {
       y: oOptions.y,
       w: oOptions.w,
       h: oOptions.h,
-      vX: game.data.NODE_WIDTH/2 * oOptions.vX,
-      vY: game.data.NODE_HEIGHT/2 * oOptions.vY,
+      vX: game.data.NODE_WIDTH / 2 * oOptions.vX,
+      vY: game.data.NODE_HEIGHT / 2 * oOptions.vY,
       row: null,
       col: null,
       lastX: null,
@@ -4531,7 +4531,7 @@ function Survivor() {
           // TODO: includeNeighbours: true ?
         });
 
-        for (i=0, j=intersects.length; i<j; i++) {
+        for (i = 0, j = intersects.length; i < j; i++) {
 
           item = game.data.map[intersects[i].row][intersects[i].col];
 
@@ -4754,8 +4754,8 @@ function Survivor() {
         }
 
         data.lastCollisionResult = {
-          'hit': hit,
-          'incrementPitch': incrementPitch
+          hit: hit,
+          incrementPitch: incrementPitch
         };
 
       }
@@ -4910,8 +4910,8 @@ function Survivor() {
           screenXAbs = Math.abs(screenX),
           screenY = game.objects.screen.data.coords.y,
           screenYAbs = Math.abs(screenY),
-          screenWThird = screenW/3,
-          screenHThird = screenH/3;
+          screenWThird = screenW / 3,
+          screenHThird = screenH / 3;
 
       var vX = data.vX;
       var vY = data.vY;
@@ -5115,7 +5115,7 @@ function Survivor() {
 
       var i, j;
 
-      for (i=0, j=objects.shipGunfire.length; i<j; i++) {
+      for (i = 0, j = objects.shipGunfire.length; i < j; i++) {
 
         objects.shipGunfire[i].die();
 
@@ -5137,7 +5137,7 @@ function Survivor() {
 
         // console.log('animating ' + items.length + ' gunfire objects');
 
-        for (i=0, j=items.length; i<j; i++) {
+        for (i = 0, j = items.length; i < j; i++) {
           // do yo' thang.
           items[i].animate();
         }
@@ -5268,7 +5268,7 @@ function Survivor() {
            [1,1],
            [0,1],
            [-1,1],
-           [-1,0] 
+           [-1,0]
           ];
 
       data.dying = true;
@@ -5287,7 +5287,7 @@ function Survivor() {
 
         objects.explosion = [];
 
-        for (i=0, j=directions.length; i<j; i++) {
+        for (i = 0, j = directions.length; i < j; i++) {
           objects.explosion.push(new BigExplosion({
             animationModulus: 6,
             node: game.dom.world,
@@ -5354,14 +5354,14 @@ function Survivor() {
       var i, j;
       var inactive = 0;
 
-      for (i=0, j=objects.explosion.length; i<j; i++) {
+      for (i = 0, j = objects.explosion.length; i < j; i++) {
         inactive += objects.explosion[i].animate();
       }
 
       if (inactive >= objects.explosion.length) {
 
         // all objects have finished animating.
-        for (i=0, j=objects.explosion.length; i<j; i++) {
+        for (i = 0, j = objects.explosion.length; i < j; i++) {
           objects.explosion[i].destruct();
         }
 
@@ -5406,7 +5406,7 @@ function Survivor() {
 
       if (items.length) {
 
-        for (i=0, j=items.length; i<j; i++) {
+        for (i = 0, j = items.length; i < j; i++) {
 
           result = objects.shipGunfire[i].collisionCheck();
 
@@ -5454,7 +5454,7 @@ function Survivor() {
 
       // remove dead items from the array
       if (toRemove.length) {
-        for (i=toRemove.length-1; i>=0; i--) {
+        for (i = toRemove.length - 1; i >= 0; i--) {
           objects.shipGunfire.splice(toRemove[i], 1);
         }
       }
@@ -5487,7 +5487,7 @@ function Survivor() {
           includeNeighbours: true
         });
 
-        for (i=0, j=intersects.length; i<j; i++) {
+        for (i = 0, j = intersects.length; i < j; i++) {
 
           item = game.data.map[intersects[i].row][intersects[i].col];
 
@@ -5615,7 +5615,7 @@ function Survivor() {
 
         if (intersects && intersects.length) {
 
-          for (i=0, j=intersects.length; i<j; i++) {
+          for (i = 0, j = intersects.length; i < j; i++) {
 
             // whether moving or not - did we hit turret gunfire?
 
@@ -5703,14 +5703,14 @@ function Survivor() {
 
       if (col !== data.col || row !== data.row) {
 
-        // broadcast event?        
+        // broadcast event?
         data.col = col;
         data.row = row;
 
       }
 
-      targetX = (w * data.col) + (w * (x/w));
-      targetY = (h * data.row) + (h * (y/h));
+      targetX = (w * data.col) + (w * (x / w));
+      targetY = (h * data.row) + (h * (y / h));
 
       // limit ship x/y to world dimensions
 
@@ -5777,7 +5777,7 @@ function Survivor() {
         }
 
       }
-    
+
     }
 
     function setDefaultPosition() {
@@ -5789,15 +5789,15 @@ function Survivor() {
       w = game.objects.screen.data.coords.width;
       h = game.objects.screen.data.coords.height;
 
-      x = (parseInt(w/2, 10) - game.data.NODE_WIDTH);
-      y = (parseInt(h/2, 10) - game.data.NODE_HEIGHT);
+      x = (parseInt(w / 2, 10) - game.data.NODE_WIDTH);
+      y = (parseInt(h / 2, 10) - game.data.NODE_HEIGHT);
 
       // HACK
       x = 32 * DEFAULT_HOME_COL;
       y = 32 * DEFAULT_HOME_ROW;
 
-      col = Math.floor(x/game.data.NODE_WIDTH);
-      row = Math.floor(y/game.data.NODE_HEIGHT);
+      col = Math.floor(x / game.data.NODE_WIDTH);
+      row = Math.floor(y / game.data.NODE_HEIGHT);
 
       data.col = col;
       data.row = row;
@@ -6140,9 +6140,9 @@ function Survivor() {
 
       var i, j, k, l;
 
-      for (i=0, j=game.data.world_rows; i<j; i++) {
+      for (i = 0, j = game.data.world_rows; i < j; i++) {
         map[i] = [];
-        for (k=0, l=game.data.world_cols; k<l; k++) {
+        for (k = 0, l = game.data.world_cols; k < l; k++) {
           map[i][k] = null;
         }
       }
@@ -6190,10 +6190,10 @@ function Survivor() {
         data,
         objectInterface,
         directionsMap = {
-          'left': 'horizontal',
-          'right': 'horizontal',
-          'up': 'vertical',
-          'down': 'vertical'
+          left: 'horizontal',
+          right: 'horizontal',
+          up: 'vertical',
+          down: 'vertical'
         },
         nodeParent = game.dom.world;
 
@@ -6213,8 +6213,8 @@ function Survivor() {
       turretY: oOptions.turretY,
       xDirection: oOptions.vX,
       yDirection: oOptions.vY,
-      vX: game.data.NODE_WIDTH/10 * oOptions.vX,
-      vY: game.data.NODE_HEIGHT/10 * oOptions.vY,
+      vX: game.data.NODE_WIDTH / 10 * oOptions.vX,
+      vY: game.data.NODE_HEIGHT / 10 * oOptions.vY,
       row: oOptions.row,
       col: oOptions.col,
       endRow: null,
@@ -6544,20 +6544,20 @@ function Survivor() {
 
     var directions = {
       x: {
-        'left': -1,
-        'right': 1
+        left: -1,
+        right: 1
       },
       y: {
-        'up': -1,
-        'down': 1
+        up: -1,
+        down: 1
       }
     };
 
     var directionsMap = {
-      'left': 'vertical',
-      'right': 'vertical',
-      'up': 'horizontal',
-      'down': 'horizontal'
+      left: 'vertical',
+      right: 'vertical',
+      up: 'horizontal',
+      down: 'horizontal'
     };
 
     var _direction = oOptions.subType.split(' ')[1]; // hack-ish :D
@@ -6637,7 +6637,7 @@ function Survivor() {
       var collision = game.objects.collision;
 
       // HACK: Note use of -type-generic-, slightly inaccurate when on -type-1 turrets that have become walls.
-      var wallType = (data.wallType + '-type-generic-'+ data.wallDirection).replace(' ', '-');
+      var wallType = (data.wallType + '-type-generic-' + data.wallDirection).replace(' ', '-');
 
       hit = collision.checkSprites({
          object1: oOptions,
@@ -6920,14 +6920,14 @@ function Survivor() {
     };
 */
     var typeToConstructor = {
-      'wall': BaseWall,
-      'turret': Turret
+      wall: BaseWall,
+      turret: Turret
     };
 
     var typeToArray = {
       // for storing in objects array
-      'wall': objects.walls,
-      'turret': objects.turrets
+      wall: objects.walls,
+      turret: objects.turrets
     };
 
     function addItem(oOptions) {
@@ -6958,7 +6958,7 @@ function Survivor() {
       }
 
       // maybe fire
-      for (i=0, j=objects.turrets.length; i<j; i++) {
+      for (i = 0, j = objects.turrets.length; i < j; i++) {
         objects.turrets[i].maybeFire();
       }
 
@@ -6976,11 +6976,11 @@ function Survivor() {
         data.dead = true;
         data.frame = 0;
 
-        for (i=0, j=objects.turrets.length; i<j; i++) {
+        for (i = 0, j = objects.turrets.length; i < j; i++) {
           objects.turrets[i].explodeComplete();
         }
 
-        for (i=0, j=objects.walls.length; i<j; i++) {
+        for (i = 0, j = objects.walls.length; i < j; i++) {
           objects.walls[i].explodeComplete();
         }
 
@@ -6997,11 +6997,11 @@ function Survivor() {
       // mark all elements as dying, begin exploding animation
       var i, j;
 
-      for (i=0, j=objects.turrets.length; i<j; i++) {
+      for (i = 0, j = objects.turrets.length; i < j; i++) {
         objects.turrets[i].explode(true);
       }
 
-      for (i=0, j=objects.walls.length; i<j; i++) {
+      for (i = 0, j = objects.walls.length; i < j; i++) {
         objects.walls[i].explode();
       }
 
@@ -7079,7 +7079,7 @@ function Survivor() {
         // reset...
         data.deadTurretCount = 0;
 
-        for (i=0, j=objects.turrets.length; i<j; i++) {
+        for (i = 0, j = objects.turrets.length; i < j; i++) {
           objects.turrets[i].animate();
           data.deadTurretCount += objects.turrets[i].data.dead;
         }
@@ -7090,11 +7090,11 @@ function Survivor() {
 
         // base dying/explosion sequence
 
-        for (i=0, j=objects.turrets.length; i<j; i++) {
+        for (i = 0, j = objects.turrets.length; i < j; i++) {
           objects.turrets[i].animate();
         }
 
-        for (i=0, j=objects.walls.length; i<j; i++) {
+        for (i = 0, j = objects.walls.length; i < j; i++) {
           objects.walls[i].animate();
         }
 
@@ -7224,7 +7224,7 @@ function Survivor() {
 
         var i, j;
 
-        for (i=0, j=objects.bases.length; i<j; i++) {
+        for (i = 0, j = objects.bases.length; i < j; i++) {
           objects.bases[i].animate();
         }
 
@@ -7262,7 +7262,7 @@ function Survivor() {
 
         var i, j;
 
-        for (i=0, j=objects.bases.length; i<j; i++) {
+        for (i = 0, j = objects.bases.length; i < j; i++) {
           objects.bases[i].pulse();
         }
 
@@ -7297,7 +7297,7 @@ function Survivor() {
 
       // sanity check
       if (baseItemMap[char] === undefined) {
-        console.log('addBaseItem('+char+'): Illegal map character.');
+        console.log('addBaseItem(' + char + '): Illegal map character.');
         return false;
       }
 
@@ -7334,7 +7334,7 @@ function Survivor() {
 
       data.activeBaseCount = 0;
 
-      for (i=0, j=objects.bases.length; i<j; i++) {
+      for (i = 0, j = objects.bases.length; i < j; i++) {
         if (objects.bases[i].data.active) {
           data.activeBaseCount++;
         }
@@ -7349,7 +7349,7 @@ function Survivor() {
       // revert all bases, etc.
       data.deadBaseCount = 0;
 
-      for (i=0, j=objects.bases.length; i<j; i++) {
+      for (i = 0, j = objects.bases.length; i < j; i++) {
         objects.bases[i].reset();
       }
 
@@ -7511,11 +7511,11 @@ function Survivor() {
           '<div class="fixed"><div class="icon type-1 wall rightDown"></div> Bases: ' + statsData.base + '</div>',
           '<div class="fixed bad-guy smiley"><div class="icon"></div> Bad guys: ' + statsData.badGuy + '</div>'
         ].join('');
-        
+
         o.style.display = 'block';
 
         // position
-        oStatsBody.style.marginTop = -parseInt(oStats.offsetHeight/2, 10) + 'px';
+        oStatsBody.style.marginTop = -parseInt(oStats.offsetHeight / 2, 10) + 'px';
 
         // objects.gameLoop.pause();
 
@@ -7534,7 +7534,7 @@ function Survivor() {
           game.objects.gameLoop.resume();
 
         };
-        
+
       }
 
       return isGameOver;
@@ -7678,7 +7678,7 @@ function Survivor() {
       data.turrets = 0;
       data.bases = 0;
 
-    }    
+    }
 
     return {
       getStats: getStats,
@@ -7731,8 +7731,8 @@ function Survivor() {
 
       bases = game.objects.baseController.objects.bases;
 
-      for (i=0, j=bases.length; i<j; i++) {
-        for (k=0, l=bases[i].objects.turrets.length; k<l; k++) {
+      for (i = 0, j = bases.length; i < j; i++) {
+        for (k = 0, l = bases[i].objects.turrets.length; k < l; k++) {
           if (!bases[i].objects.turrets[k].objects.turretGunfire.data.dead && game.objects.screen.isInView(bases[i].objects.turrets[k].objects.turretGunfire.data.col, bases[i].objects.turrets[k].objects.turretGunfire.data.row)) {
             onScreen++;
           }
@@ -7751,7 +7751,7 @@ function Survivor() {
 
       onScreen = 0;
 
-      for (i=0, j=game.objects.spaceBalls.length; i<j; i++) {
+      for (i = 0, j = game.objects.spaceBalls.length; i < j; i++) {
         if (game.objects.screen.isInView(game.objects.spaceBalls[i].data.col, game.objects.spaceBalls[i].data.row)) {
           onScreen++;
         }
@@ -7761,7 +7761,7 @@ function Survivor() {
 
       onScreen = 0;
 
-      for (i=0, j=game.objects.badGuyController.objects.badGuys.length; i<j; i++) {
+      for (i = 0, j = game.objects.badGuyController.objects.badGuys.length; i < j; i++) {
         if (game.objects.badGuyController.objects.badGuys[i].data.active && game.objects.screen.isInView(game.objects.badGuyController.objects.badGuys[i].data.col, game.objects.badGuyController.objects.badGuys[i].data.row)) {
           onScreen++;
         }
@@ -7800,7 +7800,7 @@ function Survivor() {
 
         items = o.getElementsByTagName('input');
 
-        for (i=0, j=items.length; i<j; i++) {
+        for (i = 0, j = items.length; i < j; i++) {
 
           utils.events.add(items[i], 'click', handleChange);
 
@@ -7840,8 +7840,8 @@ function Survivor() {
 
     // check for space characters in the map character data.
     // these are safe spaces to occupy.
-    for (i=0, j=cols; i<j; i++) {
-      for (k=0, l=rows; k<l; k++) {
+    for (i = 0, j = cols; i < j; i++) {
+      for (k = 0, l = rows; k < l; k++) {
         if (game.objects.mapData[k][i] === MAP_FREE_SPACE_CHAR || game.objects.mapData[k][i] === MAP_ALT_FREE_SPACE_CHAR) {
           freeSpaces.push({
             row: k,
@@ -7861,7 +7861,7 @@ function Survivor() {
       x.style.height = '31px';
       x.style.border = '1px solid #66ff66';
       // x.style.background = '#006600';
-      for (i=0, j=freeSpaces.length; i<j; i++) {
+      for (i = 0, j = freeSpaces.length; i < j; i++) {
         tmp = x.cloneNode(false);
         tmp.style.left = (freeSpaces[i].col * game.data.NODE_WIDTH) + 'px';
         tmp.style.top = (freeSpaces[i].row * game.data.NODE_HEIGHT) + 'px';
@@ -7870,16 +7870,16 @@ function Survivor() {
 
     }
 
-    for (i=0, j=spaceBallCount; i<j; i++) {
+    for (i = 0, j = spaceBallCount; i < j; i++) {
 
       // choose a random location...
-      location = parseInt(Math.random()*freeSpaces.length, 10);
+      location = parseInt(Math.random() * freeSpaces.length, 10);
 
       game.objects.spaceBalls.push(new SpaceBall(freeSpaces[location]));
 
       // and remove this item from the array (since it's now occupied)
       freeSpaces.splice(location, 1);
-    
+
     }
 
   }
@@ -7891,10 +7891,10 @@ function Survivor() {
   }
 
   mapTypes = {
-    '0': function() { return new Block(mixin(getArgs(arguments)[0], {type: 'block', subType: 'type-0'})); },
-    '1': function() { return new Block(mixin(getArgs(arguments)[0], {type: 'block', subType: 'type-1'})); },
-    '2': function() { return new Block(mixin(getArgs(arguments)[0], {type: 'block', subType: 'type-2'})); },
-    '3': function() { return new Block(mixin(getArgs(arguments)[0], {type: 'block', subType: 'type-3'})); }
+    0: function() { return new Block(mixin(getArgs(arguments)[0], { type: 'block', subType: 'type-0' })); },
+    1: function() { return new Block(mixin(getArgs(arguments)[0], { type: 'block', subType: 'type-1' })); },
+    2: function() { return new Block(mixin(getArgs(arguments)[0], { type: 'block', subType: 'type-2' })); },
+    3: function() { return new Block(mixin(getArgs(arguments)[0], { type: 'block', subType: 'type-3' })); }
   };
 
   // user-provided map
@@ -7902,7 +7902,7 @@ function Survivor() {
 
     var str = decodeURI(winloc);
 
-    mapData = str.substr(str.indexOf('mapData')+8).split('/');
+    mapData = str.substr(str.indexOf('mapData') + 8).split('/');
 
     // for now...
     DEFAULT_HOME_ROW = 1;
@@ -7927,14 +7927,14 @@ function Survivor() {
 
     console.log('looping through ' + j + ' rows of ' + mapData[0].length + ' characters');
 
-    for (i=0; i<j; i++) {
+    for (i = 0; i < j; i++) {
 
       // data for one row
       l = mapData[i].length;
 
       gridItems[i] = [];
 
-      for (k=0; k<l; k++) {
+      for (k = 0; k < l; k++) {
 
         // find the character and create the relevant object
         char = mapData[i].charAt(k);
@@ -7942,8 +7942,8 @@ function Survivor() {
         if (char !== ' ' && mapTypes[char] !== undefined) {
 
           gridItems[i].push(mapTypes[char]({
-            'x': k,
-            'y': i
+            x: k,
+            y: i
           }));
 
         } else if (game.objects.baseController.isBaseItem(char)) {
@@ -8011,8 +8011,8 @@ function Survivor() {
 
     var i, j, k, l;
 
-    for (i=0, j=game.data.map.length; i<j; i++) {
-      for (k=0, l=game.data.map[i].length; k<l; k++) {
+    for (i = 0, j = game.data.map.length; i < j; i++) {
+      for (k = 0, l = game.data.map[i].length; k < l; k++) {
         if (game.data.map[i][k] && game.data.map[i][k].restore) {
           game.data.map[i][k].restore();
         }
@@ -8020,7 +8020,7 @@ function Survivor() {
     }
 
     // reset the spaceballs, too
-    for (i=0, j=game.objects.spaceBalls.length; i<j; i++) {
+    for (i = 0, j = game.objects.spaceBalls.length; i < j; i++) {
       game.objects.spaceBalls[i].restore();
     }
 
@@ -8095,7 +8095,7 @@ function Survivor() {
         o = document.getElementById('help-screen');
         oBody = o.getElementsByTagName('div')[0];
 
-        oBody.style.marginTop = -parseInt(oBody.offsetHeight/2, 10) + 'px';
+        oBody.style.marginTop = -parseInt(oBody.offsetHeight / 2, 10) + 'px';
 
         game.objects.gameLoop.pause();
 
@@ -8162,17 +8162,17 @@ function Survivor() {
       autoLoad: true
     });
 
-    for (i=0; i<soundSprites.boomSpriteCounterMax; i++) {
+    for (i = 0; i < soundSprites.boomSpriteCounterMax; i++) {
       soundManager.createSound({
-        id: 'boom-sprite-'+i,
+        id: 'boom-sprite-' + i,
         url: 'audio/boom-sprite.mp3',
         autoLoad: true
       });
     }
 
-    for (i=0; i<soundSprites.popSpriteCounterMax; i++) {
+    for (i = 0; i < soundSprites.popSpriteCounterMax; i++) {
       soundManager.createSound({
-        id: 'pop-sprite-'+i,
+        id: 'pop-sprite-' + i,
         url: 'audio/pop-sprite.mp3',
         autoLoad: true
       });
@@ -8362,7 +8362,7 @@ function go_go_go() {
 
         str = decodeURI(winloc);
 
-        mapData = str.substr(str.indexOf('mapData')+8);
+        mapData = str.substr(str.indexOf('mapData') + 8);
 
         serviceURL = 'https://twitter.com/share/?text=';
 
