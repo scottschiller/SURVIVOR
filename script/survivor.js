@@ -564,11 +564,8 @@ function Survivor() {
       return _animationFrame.apply(window, arguments);
     } : null;
 
-    // requestAnimationFrame is still somewhat slower in this case than an old-skool setInterval(). Not sure why.
-    if (getAnimationFrame && winloc.match(/raf=1/i)) {
-      console.log('preferring requestAnimationFrame for game loop');
-    } else {
-      getAnimationFrame = null;
+    if (!getAnimationFrame) {
+      console.warn('No window.requestAnimationFrame() or equivalent?');
     }
 
     var transform, styles, prop;
