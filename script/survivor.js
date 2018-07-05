@@ -655,8 +655,6 @@ function Survivor() {
 
     console.log('user agent feature test:', localFeatures);
 
-    console.log('requestAnimationFrame() is' + (localFeatures.getAnimationFrame ? '' : ' not') + ' available');
-
     return localFeatures;
 
   }());
