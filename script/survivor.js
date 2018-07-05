@@ -920,7 +920,7 @@ function Survivor() {
 
     getNextFrame = function() {
 
-      window.getAnimationFrame(refreshAnimationCallback);
+      (window.requestAnimationFrame || features.getAnimationFrame)(refreshAnimationCallback);
 
     };
 
