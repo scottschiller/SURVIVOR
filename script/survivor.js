@@ -135,6 +135,17 @@ if (window.console === undefined) {
 var IS_MUTED = window.location.href.toString().match(/mute/i);
 var winloc = window.location.toString();
 
+/**
+ * Safari performance dies when playing multiple HTML5 <audio> / Audio() objects on desktop.
+ * So, audio is disabled by default. This has been a problem since 2013.
+ * https://bugs.webkit.org/show_bug.cgi?id=116145
+ */
+var isSafari = (
+  navigator.userAgent.match(/safari/i)
+  && !navigator.userAgent.match(/chrome/i)
+  && !window.location.toString().match(/forceaudio/i)
+);
+
 var utils = {
 
   array: (function() {
@@ -899,15 +910,13 @@ function Survivor() {
         // repeat the process
         getNextFrame();
       }
-  
+
       if (delta >= data.loopInterval) {
 
         lastExec = now;
 
         // do work, son
         events.loop();
-
-        return;
 
       }
 
@@ -4171,45 +4180,38 @@ function Survivor() {
 
         }
 
-      } else {
+      } else if (sprite2.x + sprite2.w >= sprite1.x) {
 
-        // sprite 1 is to the right.
+        overlap.sprite2.xOffset = 0;
+        overlap.sprite1.xOffset = deltaX;
 
-        if (sprite2.x + sprite2.w >= sprite1.x) {
+        // partial coverage of sprite 2.
 
-          overlap.sprite2.xOffset = 0;
-          overlap.sprite1.xOffset = deltaX;
+        if (sprite2.y < sprite1.y) {
 
-          // partial coverage of sprite 2.
+          overlap.sprite2.yOffset = 0;
+          overlap.sprite1.yOffset = deltaY;
 
-          if (sprite2.y < sprite1.y) {
+          // TODO: remove this check since it should always be true?
+          if (sprite2.y + sprite2.h >= sprite1.y) {
 
-            overlap.sprite2.yOffset = 0;
-            overlap.sprite1.yOffset = deltaY;
-
-            // TODO: remove this check since it should always be true?
-            if (sprite2.y + sprite2.h >= sprite1.y) {
-
-              overlap.sprite2.yOffset = -deltaY;
-              overlap.sprite1.yOffset = 0;
-
-            } else {
-
-              // edge case?
-              overlap.sprite2.yOffset = 0;
-              overlap.sprite1.yOffset = -deltaY;
-
-            }
+            overlap.sprite2.yOffset = -deltaY;
+            overlap.sprite1.yOffset = 0;
 
           } else {
 
-            overlap.sprite2.yOffset = deltaY;
-            overlap.sprite1.yOffset = 0;
+            // edge case?
+            overlap.sprite2.yOffset = 0;
+            overlap.sprite1.yOffset = -deltaY;
 
           }
 
-        }
+        } else {
 
+          overlap.sprite2.yOffset = deltaY;
+          overlap.sprite1.yOffset = 0;
+
+        }
 
       }
 
@@ -4342,8 +4344,8 @@ function Survivor() {
       y: oOptions.y,
       w: oOptions.w,
       h: oOptions.h,
-      vX: game.data.NODE_WIDTH / 2 * oOptions.vX,
-      vY: game.data.NODE_HEIGHT / 2 * oOptions.vY,
+      vX: (game.data.NODE_WIDTH / 2) * oOptions.vX,
+      vY: (game.data.NODE_HEIGHT / 2) * oOptions.vY,
       row: null,
       col: null,
       lastX: null,
@@ -4360,7 +4362,7 @@ function Survivor() {
     function hide() {
 
       if (!data.visible) {
-        return false;
+        return;
       }
       data.visible = false;
       nodeParent.removeChild(o);
@@ -4428,7 +4430,7 @@ function Survivor() {
 
     }
 
-    function reset() {
+    function resetShipGunFire() {
 
       hide();
 
@@ -4453,7 +4455,7 @@ function Survivor() {
 
       // called when end of screen hit, or object hit
       data.dead = true;
-      reset();
+      resetShipGunFire();
       destruct();
 
     }
@@ -4763,7 +4765,7 @@ function Survivor() {
 
       // may be inactive, or died and awaiting cleanup
       if (!data.active) {
-        return false;
+        return;
       }
 
       // increase frame count, move vX + vY
@@ -4847,7 +4849,7 @@ function Survivor() {
       hidden: 'hidden'
     };
 
-/*
+    /*
     function setPosition(oOptions) {
 
       var x, y;
@@ -4862,7 +4864,7 @@ function Survivor() {
       o.style.top = y + 'px';
 
     }
-*/
+    */
 
     function hide() {
 
@@ -4885,7 +4887,7 @@ function Survivor() {
 
     }
 
-    function reset() {
+    function resetShip() {
 
       data.dead = false;
 
@@ -4918,7 +4920,7 @@ function Survivor() {
       deltaY = y - data.y;
 
       if (data.lastX === x && data.lastY === y) {
-        return false;
+        return;
       }
 
       if (data.lastX !== x) {
@@ -4939,7 +4941,7 @@ function Survivor() {
 
       // are we near the screen boundary?
 
-      if (deltaX > 0 && x > (screenXAbs + screenW - screenWThird)) {
+      if (deltaX > 0 && x > ((screenXAbs + screenW) - screenWThird)) {
 
         // moving right
 
@@ -4952,7 +4954,7 @@ function Survivor() {
         game.objects.screen.moveBy(vX, 0);
       }
 
-      if (deltaY > 0 && y > (screenYAbs + screenH - screenHThird)) {
+      if (deltaY > 0 && y > ((screenYAbs + screenH) - screenHThird)) {
 
         // moving down
 
@@ -4995,7 +4997,7 @@ function Survivor() {
     function thrust(xDirection, yDirection) {
 
       if (data.dying || data.dead) {
-        return false;
+        return;
       }
 
       if (!data.thrusting) {
@@ -5076,7 +5078,7 @@ function Survivor() {
     function endThrust() {
 
       if (!data.thrusting) {
-        return false;
+        return;
       }
 
       utils.css.remove(o, css.thrusting);
@@ -5144,7 +5146,7 @@ function Survivor() {
     function startFire() {
 
       if (data.firing) {
-        return false;
+        return;
       }
 
       data.firing = true;
@@ -5154,7 +5156,7 @@ function Survivor() {
     function endFire() {
 
       if (!data.firing) {
-        return false;
+        return;
       }
 
       data.firing = false;
@@ -5166,7 +5168,7 @@ function Survivor() {
     function fire() {
 
       if (!data.firing || data.dying || data.dead) {
-        return false;
+        return;
       }
 
       // for alignment with ship sprite...
@@ -5249,7 +5251,7 @@ function Survivor() {
 
       if (data.dying || data.dead) {
         // already underway or done.
-        return false;
+        return;
       }
 
       var i, j,
@@ -5317,11 +5319,11 @@ function Survivor() {
       // also, stop any velocity that may be applied.
       game.objects.ship.stop();
 
-//      hide();
+      // hide();
 
       moveTo(game.data.NODE_WIDTH * Math.floor(game.objects.ship.data.col), game.data.NODE_HEIGHT * Math.floor(game.objects.ship.data.row));
 
-//      show();
+      // show();
 
     }
 
@@ -5337,7 +5339,7 @@ function Survivor() {
 
         window.setTimeout(function() {
           findSafeRespawnLocation();
-          reset();
+          resetShip();
         }, 500);
 
       }
@@ -5510,7 +5512,8 @@ function Survivor() {
 
                 if (hit) {
                   console.log('ship: pixel-level collision check with item', item);
-                  return game.objects.ship.die();
+                  game.objects.ship.die();
+                  return;
                 }
 
               } else {
@@ -5518,7 +5521,8 @@ function Survivor() {
                 // kill the ship?
                 console.log('ship collision: hittable grid item', item);
 
-                return game.objects.ship.die();
+                game.objects.ship.die();
+                return;
 
               }
 
@@ -5528,7 +5532,7 @@ function Survivor() {
 
             // check moving grid items
 
-//            if (!intersects[i].isNeighbour) {
+            // if (!intersects[i].isNeighbour) {
 
               // look only at midpoint, exclude neighbours...
 
@@ -5558,7 +5562,8 @@ function Survivor() {
 
                 if (hit) {
                   console.log('ship hit moving item', mapObjectItem);
-                  return game.objects.ship.die();
+                  game.objects.ship.die();
+                  return;
                 }
 
               } else {
@@ -5583,14 +5588,15 @@ function Survivor() {
 
                   if (hit) {
                     console.log('spaceball hit ship');
-                    return game.objects.ship.die();
+                    game.objects.ship.die();
+                    return;
                   }
 
                 }
 
               }
 
- //           }
+              // }
 
           }
 
@@ -5640,37 +5646,34 @@ function Survivor() {
 
               if (hit) {
                 console.log('ship hit turret gunfire');
-                return game.objects.ship.die();
+                game.objects.ship.die();
+                return;
               }
 
-            } else {
+            // don't check neighbouring locations, in this case...
+            } else if (!intersects[i].isNeighbour) {
 
-              // don't check neighbouring locations, in this case...
+              // did we hit a spaceball?
+              mapObjectItem = game.objects.spaceBallMap.check(intersects[i].row, intersects[i].col);
 
-              if (!intersects[i].isNeighbour) {
+              if (mapObjectItem) {
 
-                // did we hit a spaceball?
-                mapObjectItem = game.objects.spaceBallMap.check(intersects[i].row, intersects[i].col);
+                console.log('found spaceball');
 
-                if (mapObjectItem) {
+                // we have an object. do a collision check.
+                // hit = mapObjectItem.hittable();
 
-                  console.log('found spaceball');
+                hit = mapObjectItem.pixelCollisionCheck({
+                  type: 'ship',
+                  x: data.x - (data.vX * 0.5),
+                  y: data.y - (data.vY * 0.5),
+                  w: data.w,
+                  h: data.h
+                });
 
-                  // we have an object. do a collision check.
-                  // hit = mapObjectItem.hittable();
-
-                  hit = mapObjectItem.pixelCollisionCheck({
-                    type: 'ship',
-                    x: data.x - (data.vX * 0.5),
-                    y: data.y - (data.vY * 0.5),
-                    w: data.w,
-                    h: data.h
-                  });
-
-                  if (hit) {
-                    return game.objects.ship.die();
-                  }
-
+                if (hit) {
+                  game.objects.ship.die();
+                  return;
                 }
 
               }
@@ -5840,7 +5843,7 @@ function Survivor() {
 
     }
 
-    function init() {
+    function initShip() {
 
       o = document.createElement('div');
       o.className = 'ship';
@@ -5868,13 +5871,13 @@ function Survivor() {
       maybeFire: maybeFire,
       objects: objects,
       startFire: startFire,
-      init: init,
+      init: initShip,
       isThrusting: isThrusting,
       endThrust: endThrust,
       moveBy: moveBy,
       moveTo: moveTo,
       getNode: getNode,
-      reset: reset,
+      reset: resetShip,
       stop: stop,
       thrust: thrust,
       setDefaultPosition: setDefaultPosition,
@@ -5957,11 +5960,11 @@ function Survivor() {
 
         // if (frameCount % 2 === 0) {
 
-          o.style.backgroundPosition = '0px ' + (data.explosionFrame * -32) + 'px';
-          data.explosionFrame++;
-          if (data.explosionFrame >= data.explosionFrames) {
-            data.explosionFrame = 0;
-          }
+        o.style.backgroundPosition = '0px ' + (data.explosionFrame * -32) + 'px';
+        data.explosionFrame++;
+        if (data.explosionFrame >= data.explosionFrames) {
+          data.explosionFrame = 0;
+        }
 
         // }
 
@@ -5969,24 +5972,18 @@ function Survivor() {
 
     }
 
-/*
-    function getNode() {
-      return o;
-    }
-*/
+    function pixelCollisionCheck(localOptions) {
 
-    function pixelCollisionCheck(oOptions) {
-
-      var hit;
+      var hitObject;
       var collision = game.objects.collision;
 
       var wallType = (data.type + '-' + data.subType).replace(' ', '-');
-      wallType = wallType.replace(/wall\-type\-[234]/i, 'wall-type-generic');
+      wallType = wallType.replace(/wall-type-[234]/i, 'wall-type-generic');
 
       // console.log('comparing ' + oOptions.type + ' <-> ' + wallType);
 
-      hit = collision.checkSprites({
-         object1: oOptions,
+      hitObject = collision.checkSprites({
+         object1: localOptions,
          object2: {
            type: wallType,
            x: data.x,
@@ -5996,7 +5993,7 @@ function Survivor() {
          }
       });
 
-      return hit;
+      return hitObject;
 
     }
 
@@ -6010,7 +6007,7 @@ function Survivor() {
       return !data.exploded;
     }
 
-    function init() {
+    function initBaseWall() {
 
       if (!o) {
 
@@ -6033,11 +6030,11 @@ function Survivor() {
         data.exploded = false;
       }
 
-      init();
+      initBaseWall();
 
     }
 
-    init();
+    initBaseWall();
 
     return {
       animate: animate,
@@ -6105,7 +6102,7 @@ function Survivor() {
 
       if (id === undefined) {
         console.log('registerLocation: id required.');
-        return false;
+        return;
       }
 
       // first, see if this object is already somewhere else, and remove it if so
@@ -6118,7 +6115,7 @@ function Survivor() {
 
       if (map[row] === undefined || map[row][col] === undefined) {
         console.log('registerLocation(): row/col ' + row + ', ' + col + ' is invalid?');
-        return false;
+        return;
       }
 
       map[row][col] = o;
@@ -6131,7 +6128,7 @@ function Survivor() {
 
     }
 
-    function init() {
+    function initObjectMap() {
 
       var i, j, k, l;
 
@@ -6146,14 +6143,14 @@ function Survivor() {
 
     }
 
-    function reset() {
+    function resetObjectMap() {
 
       // just re-init empty array
-      init();
+      initObjectMap();
 
     }
 
-    init();
+    initObjectMap();
 
     return {
 
@@ -6161,7 +6158,7 @@ function Survivor() {
       registerLocation: registerLocation,
       clearLocation: clearLocation,
       map: map,
-      reset: reset
+      reset: resetObjectMap
 
     };
 
@@ -6208,8 +6205,8 @@ function Survivor() {
       turretY: oOptions.turretY,
       xDirection: oOptions.vX,
       yDirection: oOptions.vY,
-      vX: game.data.NODE_WIDTH / 10 * oOptions.vX,
-      vY: game.data.NODE_HEIGHT / 10 * oOptions.vY,
+      vX: (game.data.NODE_WIDTH / 10) * oOptions.vX,
+      vY: (game.data.NODE_HEIGHT / 10) * oOptions.vY,
       row: oOptions.row,
       col: oOptions.col,
       endRow: null,
@@ -6250,7 +6247,7 @@ function Survivor() {
       var location, endX, endY;
 
       if (!data.active) {
-        return false;
+        return;
       }
 
       x = Math.floor(x);
@@ -6317,7 +6314,7 @@ function Survivor() {
 
     }
 
-    function reset() {
+    function resetTurretGunfire() {
 
       hide();
 
@@ -6347,7 +6344,7 @@ function Survivor() {
       }
 
       if (shouldExpire) {
-        reset();
+        resetTurretGunfire();
       }
 
     }
@@ -6359,7 +6356,7 @@ function Survivor() {
 
       if (data.endCol !== null || data.endRow !== null) {
         // this has already been done.
-        return false;
+        return;
       }
 
       var col = data.col,
@@ -6403,13 +6400,13 @@ function Survivor() {
 
     }
 
-    function pixelCollisionCheck(oOptions) {
+    function pixelCollisionCheck(localOptions) {
 
       var hit;
       var collision = game.objects.collision;
 
       hit = collision.checkSprites({
-         object1: oOptions,
+         object1: localOptions,
          object2: {
            type: data.type + '-' + directionsMap[data.subType],
            x: data.turretX + data.x,
@@ -6427,7 +6424,7 @@ function Survivor() {
 
       // may be inactive, or died and awaiting cleanup
       if (!data.active) {
-        return false;
+        return;
       }
 
       show();
@@ -6446,11 +6443,11 @@ function Survivor() {
     function die() {
 
       // called when end of screen hit, or object hit (or turret dies)
-      reset();
+      resetTurretGunfire();
 
     }
 
-/*
+    /*
     function destruct() {
       // remove from the dom, etc.
       if (o) {
@@ -6458,9 +6455,9 @@ function Survivor() {
         o = null;
       }
     }
-*/
+    */
 
-    function init() {
+    function initTurretGunfire() {
 
 
       if (!o) {
@@ -6491,12 +6488,12 @@ function Survivor() {
 
       data.dead = false;
 
-      init();
+      initTurretGunfire();
 
     }
 
     // hack/convenience: start right away?
-    init();
+    initTurretGunfire();
 
     // fire();
 
@@ -6506,9 +6503,9 @@ function Survivor() {
       data: data,
       die: die,
       fire: fire,
-      init: init,
+      init: initTurretGunfire,
       pixelCollisionCheck: pixelCollisionCheck,
-      reset: reset,
+      reset: resetTurretGunfire,
       restore: restore
     };
 
@@ -6571,7 +6568,7 @@ function Survivor() {
       wallDirection: directionsMap[_direction],
       points: 500,
       dead: false,
-//      firing: false,
+      // firing: false,
       exploding: false,
       baseExploding: false,
       exploded: false,
@@ -6579,11 +6576,11 @@ function Survivor() {
       explosionFrames: 6
     };
 
-/*
+    /*
     function getNode() {
       return o;
     }
-*/
+    */
 
     // events.gameLoop?
 
@@ -6599,7 +6596,7 @@ function Survivor() {
     function createTurretGunfire() {
 
       if (objects.turretGunfire) {
-        return false;
+        return;
       }
 
       objects.turretGunfire = new TurretGunfire({
@@ -6619,7 +6616,7 @@ function Survivor() {
 
     }
 
-    function pixelCollisionCheck(oOptions) {
+    function pixelCollisionCheck(localOptions) {
 
       if (!data.dead) {
         // hack: while alive, count all pixels as hittable and always return true.
@@ -6628,14 +6625,14 @@ function Survivor() {
         return true;
       }
 
-      var hit;
+      var hitObject;
       var collision = game.objects.collision;
 
       // HACK: Note use of -type-generic-, slightly inaccurate when on -type-1 turrets that have become walls.
       var wallType = (data.wallType + '-type-generic-' + data.wallDirection).replace(' ', '-');
 
-      hit = collision.checkSprites({
-         object1: oOptions,
+      hitObject = collision.checkSprites({
+         object1: localOptions,
          object2: {
            type: wallType,
            x: data.x,
@@ -6645,7 +6642,7 @@ function Survivor() {
          }
       });
 
-      return hit;
+      return hitObject;
 
     }
 
@@ -6666,7 +6663,7 @@ function Survivor() {
     function die() {
 
       if (data.dead) {
-        return false;
+        return;
       }
 
       data.dead = true;
@@ -6803,7 +6800,7 @@ function Survivor() {
 
     }
 
-    function init() {
+    function initTurret() {
 
       if (!o) {
 
@@ -6849,11 +6846,11 @@ function Survivor() {
       data.exploding = false;
       data.explosionFrame = 0;
 
-      init();
+      initTurret();
 
     }
 
-    init();
+    initTurret();
 
     return {
       animate: animate,
@@ -6893,7 +6890,7 @@ function Survivor() {
       points: 10000
     };
 
-/*
+    /*
     var css = {
 
       wall: {
@@ -6913,7 +6910,8 @@ function Survivor() {
       }
 
     };
-*/
+    */
+
     var typeToConstructor = {
       wall: BaseWall,
       turret: Turret
@@ -6949,7 +6947,7 @@ function Survivor() {
       var i, j;
 
       if (!data.active || data.dying || data.dead) {
-        return false;
+        return;
       }
 
       // maybe fire
@@ -6964,7 +6962,7 @@ function Survivor() {
         var i, j;
 
         if (data.dead) {
-          return false;
+          return;
         }
 
         data.dying = false;
@@ -7005,7 +7003,7 @@ function Survivor() {
     function die() {
 
       if (!data.active || data.dying || data.dead) {
-        return true;
+        return;
       }
 
       if (features.audio) {
@@ -7035,7 +7033,7 @@ function Survivor() {
 
       // if all turrets shot, then BOOM
       if (!data.active || data.dying || data.dead) {
-        return true;
+        return;
       }
 
       if (objects.turrets.length && data.deadTurretCount >= objects.turrets.length) {
@@ -7045,7 +7043,7 @@ function Survivor() {
 
     }
 
-    function reset() {
+    function resetBase() {
 
       // bring the base back to life, per se
 
@@ -7064,7 +7062,7 @@ function Survivor() {
 
       if (!data.active || (data.dead && !data.dying)) {
         // nothing to do.
-        return false;
+        return;
       }
 
       // animate turret gunfire, OR explosion / death sequence?
@@ -7112,7 +7110,7 @@ function Survivor() {
       data: data,
       objects: objects,
       pulse: pulse,
-      reset: reset
+      reset: resetBase
     };
 
   }
@@ -7337,7 +7335,7 @@ function Survivor() {
 
     }
 
-    function reset() {
+    function resetBaseController() {
 
       var i, j;
 
@@ -7350,7 +7348,7 @@ function Survivor() {
 
     }
 
-    function init() {
+    function initBaseController() {
 
       createBases();
 
@@ -7361,9 +7359,9 @@ function Survivor() {
       findActiveBases: findActiveBases,
       isBaseItem: isBaseItem,
       addBaseItem: addBaseItem,
-      init: init,
+      init: initBaseController,
       objects: objects,
-      reset: reset
+      reset: resetBaseController
     };
 
   }
@@ -7408,7 +7406,7 @@ function Survivor() {
 
     }
 
-    function init() {
+    function initFocusMonitor() {
 
       addEvents();
 
@@ -7416,7 +7414,7 @@ function Survivor() {
 
     return {
 
-      init: init
+      init: initFocusMonitor
 
     };
 
@@ -7544,7 +7542,7 @@ function Survivor() {
 
     }
 
-    function reset() {
+    function resetGameController() {
 
       // assign defaults to data like lives, smartbombs etc.
 
@@ -7556,7 +7554,7 @@ function Survivor() {
 
     }
 
-    function init() {
+    function initGameController() {
 
       dom.lives = document.getElementById('lives');
       dom.points = document.getElementById('points');
@@ -7570,10 +7568,10 @@ function Survivor() {
 
       addPoints: addPoints,
       data: data,
-      init: init,
+      init: initGameController,
       getScore: getScore,
       refreshUI: refreshUI,
-      reset: reset,
+      reset: resetGameController,
       shipDied: shipDied,
       updateSmartbombs: updateSmartbombs
 
@@ -7666,7 +7664,7 @@ function Survivor() {
       return data;
     }
 
-    function reset() {
+    function resetStatsController() {
 
       data.blocks = 0;
       data.badGuys = 0;
@@ -7678,7 +7676,7 @@ function Survivor() {
     return {
       getStats: getStats,
       record: record,
-      reset: reset
+      reset: resetStatsController
     };
 
   }
@@ -7772,7 +7770,7 @@ function Survivor() {
 
     }
 
-    function init() {
+    function initDebugPanel() {
 
       var o, i, j,
           items;
@@ -7780,7 +7778,7 @@ function Survivor() {
       o = document.getElementById('debug-panel');
 
       if (!o) {
-        return false;
+        return;
       }
 
       if (!PERFORMANCE_MODE) {
@@ -7818,7 +7816,7 @@ function Survivor() {
 
     }
 
-    init();
+    initDebugPanel();
 
 
   }());
@@ -8220,7 +8218,7 @@ function Survivor() {
 
     // shall we use GPU acceleration tricks based on Chrome's DevTools?
     if (USE_TRANSFORM) {
-      console.log('using Chrome-specific CSS3 transforms for GPU acceleration');
+      console.log('using CSS3 transforms for GPU acceleration');
       utils.css.add(game.dom.world, 'use-transform');
     }
 
@@ -8412,11 +8410,21 @@ function go_go_go() {
 
     }
 
-    return false;
-
   }
 
   // first, make the noise.
+
+  var _1541;
+
+  function play1541() {
+    var cursor = document.getElementById('cursor');
+    if (!cursor) return;
+    l0.style.display = 'block';
+    cursor.style.display = 'none';
+    _1541.play();
+    utils.events.remove(document, 'keydown', play1541);
+    utils.events.remove(document, 'mousedown', play1541);
+  }
 
   if (soundManager.ok() && !navigator.userAgent.match(/mobile/i) && !IS_MUTED) {
 
@@ -8427,7 +8435,7 @@ function go_go_go() {
      * (gappy audio track from video fixed for use in this project)
      */
 
-    var _1541 = soundManager.createSound({
+    _1541 = soundManager.createSound({
       id: 'c64-1541-format',
       url: 'audio/1541-formatting-sound-short.mp3'
     });
@@ -8462,14 +8470,6 @@ function go_go_go() {
 
     // wait for key or click, because of <audio> playback restrictions.
 
-    function play1541() {
-      l0.style.display = 'block';
-      document.getElementById('cursor').style.display = 'none';
-      _1541.play();
-      utils.events.remove(document, 'keydown', play1541);
-      utils.events.remove(document, 'mousedown', play1541);
-    }
-
     utils.events.add(document, 'keydown', play1541);
     utils.events.add(document, 'mousedown', play1541);
 
@@ -8486,17 +8486,6 @@ function go_go_go() {
   }
 
 }
-
-/**
- * Safari performance dies when playing multiple HTML5 <audio> / Audio() objects on desktop.
- * So, audio is disabled by default. This has been a problem since 2013.
- * https://bugs.webkit.org/show_bug.cgi?id=116145
- */
-var isSafari = (
-  navigator.userAgent.match(/safari/i)
-  && !navigator.userAgent.match(/chrome/i)
-  && !window.location.toString().match(/forceaudio/i)
-);
 
 if (isSafari) {
   console.warn('Disabling standard HTML5 Audio() because Safari 11 has performance issues. Old bug here. ?forceaudio to bypass this warning. https://bugs.webkit.org/show_bug.cgi?id=116145');
